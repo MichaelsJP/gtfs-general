@@ -1,4 +1,3 @@
-"""This module provides the RP To-Do CLI."""
 from __future__ import annotations
 
 import os
@@ -17,10 +16,11 @@ from .dask_config import initialize_dask
 from .extractor.bbox import Bbox
 from .extractor.extractor import Extractor
 from .extractor.gtfs import GTFS
+from .docs import app as docs_app
 from .logging import initialize_logging
 
 app = typer.Typer()
-
+app.add_typer(docs_app, name="docs", help="Generate documentation")
 script_start_time = time.time()
 
 cpu_count: int | None = os.cpu_count()
@@ -48,7 +48,9 @@ def extract_bbox(
     input_object: str = typer.Option(..., help="Directory or zip File from which the GFTS files are read"),
     output_folder: str = typer.Option(..., help="Directory to which the GFTS files are written"),
     bbox: str = typer.Option(
-        ..., help='The bbox for selecting the GTFS data to keep. Example: "8.573179,49.352003,8.79405,49.459693"'
+        ...,
+        help="The bbox for selecting the GTFS data to keep. Format is WGS84 Coordinates lon/lat (lon min, lat min, "
+        'lon max, lat max) Example: "8.573179,49.352003,8.79405,49.459693"',
     ),
 ) -> None:
     coordinates: List[float] = [float(x.strip()) for x in bbox.split(",")]

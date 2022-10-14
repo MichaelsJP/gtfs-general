@@ -1,4 +1,4 @@
-from gtfs_general import logger
+from src.gtfs_general import logger
 
 
 class CustomException(Exception):

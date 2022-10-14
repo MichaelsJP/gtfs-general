@@ -12,11 +12,11 @@ from typing import List, Set, Union, Dict, Tuple
 
 from tqdm.dask import TqdmCallback
 
-from gtfs_general import logger
-from gtfs_general.exceptions.extractor_exceptions import GtfsFileNotFound
-from gtfs_general.extractor.bbox import Bbox
-from gtfs_general.extractor.gtfs import GTFS, GtfsDtypes
-from gtfs_general.extractor.utils import parse_date_from_str
+from src.gtfs_general import logger
+from src.gtfs_general.exceptions.extractor_exceptions import GtfsFileNotFound
+from src.gtfs_general.extractor.bbox import Bbox
+from src.gtfs_general.extractor.gtfs import GTFS, GtfsDtypes
+from src.gtfs_general.extractor.utils import parse_date_from_str
 
 
 class Extractor(GTFS):

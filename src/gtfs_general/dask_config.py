@@ -9,7 +9,7 @@ import yaml
 import dask.config
 
 
-config_file = os.path.join(os.path.dirname(__file__), "../dask.yaml")
+config_file = os.path.join(os.path.dirname(__file__), "../../dask.yaml")
 
 
 def initialize_dask() -> None:

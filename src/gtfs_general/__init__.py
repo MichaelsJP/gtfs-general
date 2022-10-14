@@ -1,6 +1,6 @@
 import logging
 
-__app_name__ = "GTFS Extractor"
+__app_name__ = "gtfs-general"
 __version__ = "0.1.0"
 
 (
@@ -21,4 +21,4 @@ ERRORS = {
     ID_ERROR: "to-do id error",
 }
 
-logger = logging.getLogger("GTFS Extractor")
+logger = logging.getLogger("GTFS General")

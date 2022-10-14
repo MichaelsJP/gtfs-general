@@ -1,19 +1,24 @@
 [tool.poetry]
 name = "gtfs-general"
 version = "0.1.0"
-description = ""
+description = "A general to command your GTFS data"
 authors = ["Julian Psotta <julianpsotta@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "gtfs_general" }]
+packages = [{include = "gtfs_general", from = "src"}]
+
+[tool.poetry.scripts]
+gtfs-general = "gtfs_general.main:app"
 
 [tool.poetry.dependencies]
 python = ">=3.8,<4"
 dask = { extras = ['distributed'], version = "^2022.9.2" }
 pandas = "^1.5.0"
-typer = "^0.6.1"
+typer = {extras = ["all"], version = "^0.6.1"}
 rich = "^12.6.0"
 types-PyYAML = "^6.0.12"
 tqdm = "^4.64.1"
+click = "^8.1.3"
+click-extra = "^3.2.5"
 
 
 
@@ -27,7 +32,7 @@ pytest = "^7.1.3"
 bokeh = "^2.4.3"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ["poetry-core", "poetry>=1.2"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.isort]

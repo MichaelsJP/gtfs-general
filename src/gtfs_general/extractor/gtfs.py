@@ -11,9 +11,9 @@ from typing import Any, Tuple, Dict
 from dask import dataframe as ddf
 import numpy as np
 
-from gtfs_general import logger
-from gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
-from gtfs_general.extractor.utils import parse_date_from_str
+from src.gtfs_general import logger
+from src.gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
+from src.gtfs_general.extractor.utils import parse_date_from_str
 
 
 class GtfsDtypes:
