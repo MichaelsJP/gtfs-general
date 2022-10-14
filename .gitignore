@@ -131,3 +131,4 @@ dmypy.json
 # Custom ignores
 /tests/files/ic_ice_gtfs_germany/
 .idea
+/gtfs_general/
