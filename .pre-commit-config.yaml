@@ -1,0 +1,78 @@
+# .pre-commit-config.yaml
+# ========================
+#
+# pre-commit clean
+# pre-commit install
+# pre-commit install-hooks
+#
+# precommit hooks installation
+#
+# - pre-commit autoupdate
+#
+#
+# continuous integration
+# ======================
+#
+# - pre-commit run --all-files
+#
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.2.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: check-vcs-permalinks
+      - id: debug-statements
+      - id: destroyed-symlinks
+      - id: detect-private-key
+      - id: fix-byte-order-marker
+      - id: fix-encoding-pragma
+        args: ["--remove"]
+      - id: trailing-whitespace
+        exclude: ^.venv*|output
+      - id: end-of-file-fixer
+        exclude: ^.venv*|output
+      - id: check-yaml
+        exclude: ^.venv*|output
+      - id: check-json
+        exclude: ^.venv*|output
+      - id: forbid-new-submodules
+      - id: mixed-line-ending
+        args: [ '--fix=lf' ]
+        description: Forces to replace line ending by the UNIX 'lf' character.
+        exclude: ^.venv*|output
+      - id: pretty-format-json
+        args: [ '--no-sort-keys' ]
+        exclude: ^.venv*|output
+      - id: no-commit-to-branch
+        args: [ --branch, master ]
+        exclude: ^.venv*|output
+  - repo: local
+    hooks:
+    - id: black
+      name: Black
+      entry: black .
+      language: system
+      pass_filenames: false
+    - id: isort
+      name: Isort
+      entry: isort --diff --single-line-exclusions=.venv310 .
+      language: system
+      pass_filenames: false
+    - id: flake8
+      name: Flake8
+      entry: flake8 .
+      language: system
+      pass_filenames: false
+    - id: mypy
+      name: Mypy
+      entry: mypy .
+      language: system
+      pass_filenames: false
