@@ -132,3 +132,4 @@ dmypy.json
 /tests/files/ic_ice_gtfs_germany/
 .idea
 /gtfs_general/
+/src/gtfs_general/extractor/filters.py
