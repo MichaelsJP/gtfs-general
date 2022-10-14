@@ -130,5 +130,4 @@ dmypy.json
 
 # Custom ignores
 /tests/files/ic_ice_gtfs_germany/
-/gtfs_general/extractor/filters.py
 .idea
