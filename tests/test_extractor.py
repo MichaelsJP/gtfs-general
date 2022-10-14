@@ -4,7 +4,8 @@ from typing import List
 from py._path.local import LocalPath
 from typer.testing import CliRunner
 
-from gtfs_general import cli, __app_name__, __version__
+from gtfs_general import main
+from src.gtfs_general import __app_name__, __version__
 
 runner = CliRunner()
 
@@ -62,7 +63,7 @@ def check_ic_ice_gtfs_germany_bbox_extraction_results(directory: LocalPath) -> N
 
 
 def test_version() -> None:
-    result = runner.invoke(cli.app, ["--version"])
+    result = runner.invoke(main.app, ["--version"])
     assert result.exit_code == 0
     assert f"{__app_name__} v{__version__}\n" in result.stdout
 
@@ -71,7 +72,7 @@ def test_extract_by_bbox_with_file(tmpdir: LocalPath) -> None:
     test_gtfs_file: str = script_path.joinpath("files/ic_ice_gtfs_germany.zip").__str__()
 
     result = runner.invoke(
-        cli.app,
+        main.app,
         [
             "--logging",
             "INFO",
@@ -92,7 +93,7 @@ def test_extract_by_bbox_with_file(tmpdir: LocalPath) -> None:
 
 def test_extract_by_bbox_with_folder(gtfs_test_folder: pathlib.Path, tmpdir: LocalPath) -> None:
     result = runner.invoke(
-        cli.app,
+        main.app,
         [
             "--logging",
             "INFO",
@@ -114,7 +115,7 @@ def test_extract_by_bbox_with_folder(gtfs_test_folder: pathlib.Path, tmpdir: Loc
 
 def test_get_metadata(gtfs_test_folder: pathlib.Path) -> None:
     result = runner.invoke(
-        cli.app,
+        main.app,
         ["--logging", "INFO", "metadata", "--input-object", gtfs_test_folder.__str__()],
     )
     assert result.exit_code == 0
@@ -123,7 +124,7 @@ def test_get_metadata(gtfs_test_folder: pathlib.Path) -> None:
 
 def test_filter_by_date(gtfs_test_folder: pathlib.Path, tmpdir: LocalPath) -> None:
     result = runner.invoke(
-        cli.app,
+        main.app,
         [
             "--logging",
             "INFO",
