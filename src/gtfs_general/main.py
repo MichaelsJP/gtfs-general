@@ -13,6 +13,7 @@ import typer
 from tqdm import tqdm
 
 from . import __app_name__, __version__, logger
+from .application import StandaloneApplication, create_app
 from .dask_config import initialize_dask
 from .extractor.bbox import Bbox
 from .extractor.extractor import Extractor
@@ -20,8 +21,6 @@ from .extractor.gtfs import GTFS
 from .docs import app as docs_app
 from .logging import initialize_logging
 import uvicorn
-
-from .server import create_app, StandaloneApplication
 
 app = typer.Typer()
 
