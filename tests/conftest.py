@@ -3,11 +3,20 @@ import shutil
 import zipfile
 from pathlib import Path
 from typing import Generator
+from fastapi.testclient import TestClient
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
 
+from gtfs_general.application import create_app
+
 script_path = pathlib.Path(__file__).parent.resolve()
+
+
+@pytest.fixture(scope="module")
+def test_client() -> Generator[TestClient, None, None]:
+    with TestClient(create_app()) as c:
+        yield c
 
 
 @pytest.fixture(scope="function")

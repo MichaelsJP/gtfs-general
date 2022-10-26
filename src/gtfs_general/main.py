@@ -8,18 +8,22 @@ from functools import partialmethod
 from pathlib import Path
 
 from typing import Optional, List
+
 import typer
 from tqdm import tqdm
 
 from . import __app_name__, __version__, logger
+from .application import StandaloneApplication, create_app
 from .dask_config import initialize_dask
 from .extractor.bbox import Bbox
 from .extractor.extractor import Extractor
 from .extractor.gtfs import GTFS
 from .docs import app as docs_app
 from .logging import initialize_logging
+import uvicorn
 
 app = typer.Typer()
+
 app.add_typer(docs_app, name="docs", help="Generate documentation")
 script_start_time = time.time()
 
@@ -130,6 +134,22 @@ def metadata(
     logger.info(f"Run time: {run_time}")
     logger.info(f"Service date window from '{dates[0]}' to '{dates[1]}'")
     logger.info("################################")
+
+
+@app.command()
+def server(
+    ctx: typer.Context,
+    host: str = typer.Option("0.0.0.0", help="Provide the desired host."),
+    port: int = typer.Option(8080, help="Provide the desired port."),
+    reload: bool = typer.Option(False, help="Activate automatic server reload on code changes."),
+    workers: int = typer.Option(1, help="Define number of uvicorn workers."),
+    gunicorn: bool = typer.Option(False, help="Use Gunicorn instead of uvicorn."),
+) -> None:
+    if not gunicorn:
+        uvicorn.run("gtfs_general.main:create_app", host=host, port=port, reload=reload, workers=workers)
+    else:
+        options = {"bind": f"{host}:{port}", "workers": workers, "worker_class": "uvicorn.workers.UvicornWorker"}
+        StandaloneApplication(create_app(), options).run()
 
 
 @app.callback()
