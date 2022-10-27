@@ -14,7 +14,7 @@ script_path = pathlib.Path(__file__).parent.resolve()
 
 
 @pytest.fixture(scope="module")
-def test_client() -> Generator[TestClient, None, None]:
+def test_fastapi_client() -> Generator[TestClient, None, None]:
     with TestClient(create_app()) as c:
         yield c
 
