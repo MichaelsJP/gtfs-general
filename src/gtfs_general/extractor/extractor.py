@@ -28,7 +28,7 @@ class Extractor(GTFS):
             logger.debug(f"Creating output folder: {output_folder}")
             os.makedirs(output_folder)
         else:
-            logger.warn("Output folder exists. Using it.")
+            logger.warning("Output folder exists. Using it.")
         if not output_folder.exists():
             logger.error(f"Check access rights. Couldn't find and create the output folder {output_folder}")
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), output_folder)
