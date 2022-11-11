@@ -25,7 +25,7 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       - name: Load cached tox
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .tox
           key: tox-lint-poetry-1.2.2-python-3.10-${{ hashFiles('**/poetry.lock') }}
@@ -82,7 +82,7 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
       - name: Load cached tox
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: .tox
           key: tox-${{ matrix.os }}-poetry-${{ matrix.poetry-version }}-python-${{ matrix.config.python-version }}-${{ hashFiles('**/poetry.lock') }}
