@@ -36,24 +36,129 @@ repos:
       - id: fix-encoding-pragma
         args: ["--remove"]
       - id: trailing-whitespace
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: end-of-file-fixer
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: check-yaml
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: check-json
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: forbid-new-submodules
       - id: mixed-line-ending
         args: [ '--fix=lf' ]
         description: Forces to replace line ending by the UNIX 'lf' character.
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: pretty-format-json
         args: [ '--no-sort-keys' ]
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: no-commit-to-branch
-        args: [ --branch, master ]
-        exclude: ^.venv*|output
+        args: [ --branch, main ]
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
   - repo: local
     hooks:
     - id: black
