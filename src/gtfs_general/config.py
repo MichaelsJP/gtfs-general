@@ -1,8 +1,6 @@
 import pathlib
 
-from pydantic import (
-    BaseSettings,
-)
+from pydantic import BaseSettings
 
 script_location = pathlib.Path(__file__).parent.resolve()
 

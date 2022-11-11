@@ -5,11 +5,11 @@ import errno
 import os
 import shutil
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Set, Tuple, Union
+
 import dask.dataframe as ddf
 import pandas as pd
-from pathlib import Path
-from typing import List, Set, Union, Dict, Tuple
-
 from tqdm.dask import TqdmCallback
 
 from src.gtfs_general import logger

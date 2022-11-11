@@ -6,21 +6,20 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
 from pathlib import Path
-
-from typing import Optional, List
+from typing import List, Optional
 
 import typer
+import uvicorn
 from tqdm import tqdm
 
 from . import __app_name__, __version__, logger
 from .application import StandaloneApplication, create_app
 from .dask_config import initialize_dask
+from .docs import app as docs_app
 from .extractor.bbox import Bbox
 from .extractor.extractor import Extractor
 from .extractor.gtfs import GTFS
-from .docs import app as docs_app
 from .logging import initialize_logging
-import uvicorn
 
 app = typer.Typer()
 

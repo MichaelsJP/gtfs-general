@@ -4,12 +4,11 @@ import errno
 import os
 import tempfile
 import zipfile
-
 from pathlib import Path
-from typing import Any, Tuple, Dict
+from typing import Any, Dict, Tuple
 
-from dask import dataframe as ddf
 import numpy as np
+from dask import dataframe as ddf
 
 from src.gtfs_general import logger
 from src.gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
