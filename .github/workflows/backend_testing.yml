@@ -72,7 +72,7 @@ jobs:
           python-version: ${{ matrix.config.python-version }}
       - name: Install dependencies
         run: |
-          apt-get udpate && apt-get install -y libsqlite3-mod-spatialite
+          apt-get udpate && apt-get install -y libsqlite3-mod-spatialite spatialite-bin
           python -m pip install --upgrade pip tox
       - name: Install Poetry
         uses: snok/install-poetry@v1
