@@ -7,16 +7,31 @@ from fastapi.testclient import TestClient
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from sqlalchemy import create_engine
+from sqlalchemy.sql import select, func
+from sqlalchemy.event import listen
 
 from gtfs_general.application import create_app
+from gtfs_general.db.session import load_spatialite
 
 script_path = pathlib.Path(__file__).parent.resolve()
 
 
 @pytest.fixture(scope="module")
-def test_fastapi_client() -> Generator[TestClient, None, None]:
+def fastapi_client() -> Generator[TestClient, None, None]:
     with TestClient(create_app()) as c:
         yield c
+
+
+@pytest.fixture(scope="module")
+def spatialite_client(tmp_path_factory: TempPathFactory) -> Generator[TestClient, None, None]:
+    tmp_path: Path = tmp_path_factory.mktemp("test_db")
+    tmp_db_path: Path = tmp_path.joinpath("gis.db")
+    engine = create_engine(f"sqlite:///{tmp_db_path}", echo=True)
+    listen(engine, "connect", load_spatialite)
+    conn = engine.connect()
+    conn.execute(select([func.InitSpatialMetaData()]))
+    yield engine
 
 
 @pytest.fixture(scope="function")
