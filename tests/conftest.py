@@ -3,13 +3,13 @@ import shutil
 import zipfile
 from pathlib import Path
 from typing import Generator
-from fastapi.testclient import TestClient
 
 import pytest
 from _pytest.tmpdir import TempPathFactory
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.sql import select, func
 from sqlalchemy.event import listen
+from sqlalchemy.sql import func, select
 
 from gtfs_general.application import create_app
 from gtfs_general.db.session import load_spatialite

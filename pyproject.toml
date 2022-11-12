@@ -40,6 +40,7 @@ tox-docker = "^4.0.0a2"
 tox = "^3.27.0"
 pytest-random-order = "^1.0.4"
 pytest-cov = "^4.0.0"
+autoflake = "^1.7.7"
 
 [build-system]
 requires = ["poetry-core", "poetry>=1.2"]

@@ -1,6 +1,6 @@
 import pathlib
-from fastapi.testclient import TestClient
 
+from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
 from gtfs_general.config import settings
