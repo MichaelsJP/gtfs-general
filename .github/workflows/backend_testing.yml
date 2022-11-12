@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up testing Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -65,7 +65,7 @@ jobs:
           --health-retries 5
     steps:
       - name: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Set up testing Python ${{ matrix.config.python-version }}
         uses: actions/setup-python@v4
         with:
