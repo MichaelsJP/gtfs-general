@@ -73,7 +73,7 @@ jobs:
       - name: Install dependencies
         run: |
           apt-get udpate && apt-get install -y libsqlite3-mod-spatialite spatialite-bin
-          ln -s /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
+          sudo ln -s /usr/lib/x86_64-linux-gnu/mod_spatialite.so /usr/lib/x86_64-linux-gnu/mod_spatialite
           python -m pip install --upgrade pip tox
       - name: Install Poetry
         uses: snok/install-poetry@v1
