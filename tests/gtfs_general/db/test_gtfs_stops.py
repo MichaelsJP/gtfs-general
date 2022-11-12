@@ -36,7 +36,7 @@ def test_stops_foreign_key(
     first_object: Stops = stops_factory(stop_id="1_stop_id", parent_stop=None)
     second_object: Stops = stops_factory(stop_id="2_stop_id", parent_stop=first_object)
     third_object: Stops = stops_factory(stop_id="3_stop_id", parent_stop=first_object)
-    session.add_all([first_object, second_object])
+    session.add_all([first_object, second_object, third_object])
     session.commit()
     assert first_object == second_object.parent_stop
     assert first_object == third_object.parent_stop

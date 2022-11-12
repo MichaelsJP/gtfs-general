@@ -854,17 +854,6 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "six", "virtualenv"]
 
 [[package]]
-name = "pytest-random-order"
-version = "1.0.4"
-description = "Randomise the order in which pytest tests are run with some control over the randomness"
-category = "dev"
-optional = false
-python-versions = ">=3.5.0"
-
-[package.dependencies]
-pytest = ">=3.0.0"
-
-[[package]]
 name = "pytest-xdist"
 version = "3.0.2"
 description = "pytest xdist plugin for distributed testing and loop-on-failing modes"
@@ -1365,7 +1354,7 @@ heapdict = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<4"
-content-hash = "42019ba1343a58f9305316135db4135f72616a082e7876197c36dc44808d6e10"
+content-hash = "05e5409ff4c5e763445dfb3c9de5558f51b69872849d481a4770d21ef2b308f0"
 
 [metadata.files]
 anyio = [
@@ -2082,10 +2071,6 @@ pytest = [
 pytest-cov = [
     {file = "pytest-cov-4.0.0.tar.gz", hash = "sha256:996b79efde6433cdbd0088872dbc5fb3ed7fe1578b68cdbba634f14bb8dd0470"},
     {file = "pytest_cov-4.0.0-py3-none-any.whl", hash = "sha256:2feb1b751d66a8bd934e5edfa2e961d11309dc37b73b0eabe73b5945fee20f6b"},
-]
-pytest-random-order = [
-    {file = "pytest-random-order-1.0.4.tar.gz", hash = "sha256:6b2159342a4c8c10855bc4fc6d65ee890fc614cb2b4ff688979b008a82a0ff52"},
-    {file = "pytest_random_order-1.0.4-py3-none-any.whl", hash = "sha256:72279a7f823969e18b10e438950f58330d17e0fcffb57cbd7929770cd687ecb2"},
 ]
 pytest-xdist = [
     {file = "pytest-xdist-3.0.2.tar.gz", hash = "sha256:688da9b814370e891ba5de650c9327d1a9d861721a524eb917e620eec3e90291"},

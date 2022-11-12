@@ -2,7 +2,17 @@ import datetime
 from typing import Optional
 
 from gtfs_general.db import Calendar
-from gtfs_general.db.gtfs import Agency, DepartsOnDay, LocationType, Stops, WheelchairBoarding
+from gtfs_general.db.gtfs import (
+    Agency,
+    ContinuousDropOff,
+    ContinuousPickup,
+    DepartsOnDay,
+    LocationType,
+    Routes,
+    RouteType,
+    Stops,
+    WheelchairBoarding,
+)
 
 
 def stops_factory(stop_id: str, parent_stop: Optional[Stops] = None) -> Stops:
@@ -53,4 +63,30 @@ def calendar_factory(
         sunday=DepartsOnDay.NOT_DEPARTING,
         start_date=start_date,
         end_date=end_date,
+    )
+
+
+def routes_factory(
+    route_id: str,
+    agency_id: Optional[str] = None,
+    agency: Optional[Agency] = None,
+    route_type: RouteType = RouteType.BUS,
+    route_sort_order: int = 1,
+    continuous_pickup: Optional[ContinuousPickup] = ContinuousPickup.NO_CONTINUOUS_PICKUP,
+    continuous_drop_off: Optional[ContinuousDropOff] = ContinuousDropOff.NO_CONTINUOUS_DROP_OFF,
+) -> Routes:
+    return Routes(
+        route_id=route_id,
+        agency_id=agency_id,
+        agency=agency,
+        route_short_name="route_short_name",
+        route_long_name="route_long_name",
+        route_desc="route_desc",
+        route_type=route_type,
+        route_url="route_url",
+        route_color="route_color",
+        route_text_color="route_text_color",
+        route_sort_order=route_sort_order,
+        continuous_pickup=continuous_pickup,
+        continuous_drop_off=continuous_drop_off,
     )
