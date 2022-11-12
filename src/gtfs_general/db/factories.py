@@ -28,12 +28,12 @@ def agency_factory(agency_name: str, agency_id: Optional[str] = None) -> Agency:
     return Agency(
         agency_name=agency_name,
         agency_id=agency_id,
-        agency_url=f"{agency_name}agency_url",
-        agency_timezone=f"{agency_name}agency_timezone",
-        agency_lang=f"{agency_name}agency_lang",
-        agency_phone=f"{agency_name}agency_phone",
-        agency_fare_url=f"{agency_name}agency_fare_url",
-        agency_email=f"{agency_name}agency_email",
+        agency_url=f"{agency_name}_agency_url",
+        agency_timezone=f"{agency_name}_agency_timezone",
+        agency_lang=f"{agency_name}_agency_lang",
+        agency_phone=f"{agency_name}_agency_phone",
+        agency_fare_url=f"{agency_name}_agency_fare_url",
+        agency_email=f"{agency_name}_agency_email",
     )
 
 

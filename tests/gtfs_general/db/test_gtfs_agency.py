@@ -2,93 +2,48 @@ import pytest
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
 from sqlmodel import Session, select
 
+from gtfs_general.db.factories import agency_factory
 from gtfs_general.db.gtfs import Agency
 
 
 @pytest.mark.parametrize(
-    "agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone,agency_fare_url,agency_email,"
-    "expect_to_fail",
+    "agency_id,agency_name,expect_to_fail",
     [
         (
             "1",
             "foo_agency",
-            "https://foo-agency.local",
-            "de",
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
+            False,
+        ),
+        (
+            "2",
+            "foo_agency",
             False,
         ),
         (
             None,
             "foo_agency",
-            "https://foo-agency.local",
-            "de",
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
             False,
         ),
         (
+            "3",
             None,
-            None,
-            "https://foo-agency.local",
-            "de",
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
             True,
         ),
         (
             None,
-            "foo_agency",
             None,
-            "de",
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
-            True,
-        ),
-        (
-            None,
-            "foo_agency",
-            "https://foo-agency.local",
-            None,
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
             True,
         ),
     ],
 )
 def test_agency(
-    agency_id: str,
     agency_name: str,
-    agency_url: str,
-    agency_timezone: str,
-    agency_lang: str,
-    agency_phone: str,
-    agency_fare_url: str,
-    agency_email: str,
+    agency_id: str,
     expect_to_fail: bool,
     in_memory_spatialite_session: Session,
 ) -> None:
     session: Session = in_memory_spatialite_session
-    original_object = Agency(
-        agency_id=agency_id,
-        agency_name=agency_name,
-        agency_url=agency_url,
-        agency_timezone=agency_timezone,
-        agency_lang=agency_lang,
-        agency_phone=agency_phone,
-        agency_fare_url=agency_fare_url,
-        agency_email=agency_email,
-    )
+    original_object: Agency = agency_factory(agency_id=agency_id, agency_name=agency_name)
     session.add(original_object)
     if expect_to_fail:
         with pytest.raises((IntegrityError, PendingRollbackError)):
@@ -102,62 +57,20 @@ def test_agency(
 
 
 @pytest.mark.parametrize(
-    "agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone,agency_fare_url,agency_email",
+    "agency_id,agency_name",
     [
-        (
-            "1",
-            "foo_agency",
-            "https://foo-agency.local",
-            "de",
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
-        ),
-        (
-            None,
-            "foo_agency",
-            "https://foo-agency.local",
-            "de",
-            "german",
-            "0123foo",
-            "https://foo-agency.local",
-            "test@foo-agency.local",
-        ),
+        ("1", "foo_agency"),
+        (None, "foo_agency"),
     ],
 )
 def test_agency_duplicate(
     agency_id: str,
     agency_name: str,
-    agency_url: str,
-    agency_timezone: str,
-    agency_lang: str,
-    agency_phone: str,
-    agency_fare_url: str,
-    agency_email: str,
     in_memory_spatialite_session: Session,
 ) -> None:
     session: Session = in_memory_spatialite_session
-    original_object = Agency(
-        agency_id=agency_id,
-        agency_name=agency_name,
-        agency_url=agency_url,
-        agency_timezone=agency_timezone,
-        agency_lang=agency_lang,
-        agency_phone=agency_phone,
-        agency_fare_url=agency_fare_url,
-        agency_email=agency_email,
-    )
-    duplicate_object = Agency(
-        agency_id=agency_id,
-        agency_name=agency_name,
-        agency_url=agency_url,
-        agency_timezone=agency_timezone,
-        agency_lang=agency_lang,
-        agency_phone=agency_phone,
-        agency_fare_url=agency_fare_url,
-        agency_email=agency_email,
-    )
+    original_object = agency_factory(agency_id=agency_id, agency_name=agency_name)
+    duplicate_object = agency_factory(agency_id=agency_id, agency_name=agency_name)
     session.add(original_object)
     session.commit()
     with pytest.raises(IntegrityError):
