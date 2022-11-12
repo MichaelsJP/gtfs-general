@@ -79,5 +79,12 @@ exclude = '''
 '''
 
 [tool.pytest.ini_options]
-log_cli = true
+log_cli = false
 log_cli_level = 20 # Warnings
+filterwarnings = [
+    "ignore:::.*tests.gtfs_general.db.test_gtfs_agency:97",
+    "ignore:::.*tests.gtfs_general.db.test_gtfs_agency:167",
+    "ignore:::.*tests.gtfs_general.db.test_gtfs_calendar:132",
+    "ignore:::.*tests.gtfs_general.db.test_gtfs_calendar:91",
+
+]

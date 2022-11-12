@@ -23,9 +23,9 @@ def fastapi_client() -> Generator[TestClient, None, None]:
         yield c
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def in_memory_spatialite_session() -> Generator[Session, None, None]:
-    engine = create_engine("sqlite:///memory", echo=True)
+    engine = create_engine("sqlite:///:memory:", echo=True)
     listen(engine, "connect", load_spatialite)
     conn = engine.connect()
     conn.execute(select([func.InitSpatialMetaData()]))
@@ -36,7 +36,7 @@ def in_memory_spatialite_session() -> Generator[Session, None, None]:
     conn.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="session")
 def gtfs_test_folder(tmp_path_factory: TempPathFactory) -> Generator:
     tmp_path: Path = tmp_path_factory.mktemp("test_files")
     test_gtfs_file: str = script_path.joinpath("files/ic_ice_gtfs_germany.zip").__str__()

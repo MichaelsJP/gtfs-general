@@ -10,8 +10,8 @@ class DepartsOnDay(Enum):
 
 
 class Agency(SQLModel, table=True):
-    agency_id: str = Field(primary_key=True, index=True, nullable=True)
-    agency_name: str = Field(primary_key=True, index=True, nullable=False)
+    agency_id: str = Field(default=None, primary_key=True, index=True, nullable=True, unique=True)
+    agency_name: str = Field(primary_key=True, unique=True)
     agency_url: str = Field(nullable=False)
     agency_timezone: str = Field(nullable=False)
     agency_lang: str = Field(nullable=True)
@@ -24,7 +24,7 @@ class Agency(SQLModel, table=True):
 
 
 class Calendar(SQLModel, table=True):
-    service_id: str = Field(primary_key=True, index=True, nullable=False)
+    service_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
     monday: DepartsOnDay = Field(nullable=False)
     tuesday: DepartsOnDay = Field(nullable=False)
     wednesday: DepartsOnDay = Field(nullable=False)

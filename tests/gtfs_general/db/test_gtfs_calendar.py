@@ -24,7 +24,6 @@ from gtfs_general.db import Calendar
             datetime.datetime.utcnow() + datetime.timedelta(days=8),
             False,
         ),
-        ("1", 0, 1, 0, 1, 0, 1, 0, datetime.datetime.now(), datetime.datetime.now() + datetime.timedelta(days=8), True),
         (
             "2",
             None,
@@ -93,3 +92,39 @@ def test_calendar(
         object_from_db = session.exec(select(Calendar).where(Calendar.service_id == original_object.service_id)).all()
         assert len(object_from_db) == 1
         assert object_from_db[0] == original_object
+
+
+def test_calendar_duplicate_fail(
+    in_memory_spatialite_session: Session,
+) -> None:
+    session: Session = in_memory_spatialite_session
+    first_object = Calendar(
+        service_id="1",
+        monday=0,
+        tuesday=0,
+        wednesday=0,
+        thursday=0,
+        friday=0,
+        saturday=0,
+        sunday=0,
+        start_date=datetime.datetime.now(),
+        end_date=datetime.datetime.now() + datetime.timedelta(days=8),
+    )
+    duplicate_object = Calendar(
+        service_id="1",
+        monday=0,
+        tuesday=0,
+        wednesday=0,
+        thursday=0,
+        friday=0,
+        saturday=0,
+        sunday=0,
+        start_date=datetime.datetime.now(),
+        end_date=datetime.datetime.now() + datetime.timedelta(days=8),
+    )
+    session.add(first_object)
+    session.commit()
+    with pytest.raises(IntegrityError):
+        session.add(duplicate_object)
+        session.commit()
+    session.rollback()
