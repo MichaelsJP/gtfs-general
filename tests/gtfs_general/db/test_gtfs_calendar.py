@@ -67,11 +67,11 @@ def test_calendar(
     sunday: int,
     start_date: int,
     end_date: int,
-    expect_to_fail: int,
+    expect_to_fail: bool,
     in_memory_spatialite_session: Session,
 ) -> None:
     session: Session = in_memory_spatialite_session
-    calendar_object = Calendar(
+    original_object = Calendar(
         service_id=service_id,
         monday=monday,
         tuesday=tuesday,
@@ -83,15 +83,13 @@ def test_calendar(
         start_date=start_date,
         end_date=end_date,
     )
-    session.add(calendar_object)
+    session.add(original_object)
     if expect_to_fail:
         with pytest.raises((IntegrityError, PendingRollbackError)):
             session.commit()
         session.rollback()
     else:
         session.commit()
-        calendar_object_from_db = session.exec(
-            select(Calendar).where(Calendar.service_id == calendar_object.service_id)
-        ).all()
-        assert len(calendar_object_from_db) == 1
-        assert calendar_object_from_db[0] == calendar_object
+        object_from_db = session.exec(select(Calendar).where(Calendar.service_id == original_object.service_id)).all()
+        assert len(object_from_db) == 1
+        assert object_from_db[0] == original_object

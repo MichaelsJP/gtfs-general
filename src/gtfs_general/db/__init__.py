@@ -1,1 +1,1 @@
-from .gtfs import Calendar
+from .gtfs import Agency, Calendar
