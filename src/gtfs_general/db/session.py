@@ -5,6 +5,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.event import listen
 
+from .gtfs import Calendar  # noqa
+
 
 def load_spatialite(dbapi_conn: Any, connection_record: Any) -> None:
     dbapi_conn.enable_load_extension(True)

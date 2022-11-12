@@ -7,9 +7,9 @@ from typing import Generator
 import pytest
 from _pytest.tmpdir import TempPathFactory
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
 from sqlalchemy.event import listen
 from sqlalchemy.sql import func, select
+from sqlmodel import Session, SQLModel, create_engine
 
 from gtfs_general.application import create_app
 from gtfs_general.db.session import load_spatialite
@@ -24,14 +24,16 @@ def fastapi_client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(scope="module")
-def spatialite_client(tmp_path_factory: TempPathFactory) -> Generator[TestClient, None, None]:
-    tmp_path: Path = tmp_path_factory.mktemp("test_db")
-    tmp_db_path: Path = tmp_path.joinpath("gis.db")
-    engine = create_engine(f"sqlite:///{tmp_db_path}", echo=True)
+def in_memory_spatialite_session() -> Generator[Session, None, None]:
+    engine = create_engine("sqlite:///memory", echo=True)
     listen(engine, "connect", load_spatialite)
     conn = engine.connect()
     conn.execute(select([func.InitSpatialMetaData()]))
-    yield engine
+    SQLModel.metadata.create_all(engine)
+    with Session(engine) as session:
+        yield session
+    SQLModel.metadata.drop_all(engine, checkfirst=True)
+    conn.close()
 
 
 @pytest.fixture(scope="function")
