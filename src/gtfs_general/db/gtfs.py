@@ -90,7 +90,7 @@ class Stops(SQLModel, table=True):
             remote_side="Stops.stop_id"  # notice the uppercase "N" to refer to this table class
         ),
     )
-    stations: list["Stops"] = Relationship(back_populates="parent_stop")
+    stations: List["Stops"] = Relationship(back_populates="parent_stop")
 
     stop_timezone: Optional[str] = Field(nullable=True)
     wheelchair_boarding: Optional[WheelchairBoarding] = Field(nullable=True)
