@@ -581,7 +581,7 @@ python-versions = "*"
 name = "mypy"
 version = "0.982"
 description = "Optional static typing for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.7"
 
@@ -599,7 +599,7 @@ reports = ["lxml"]
 name = "mypy-extensions"
 version = "0.4.3"
 description = "Experimental type system extensions for programs checked with the mypy typechecker."
-category = "dev"
+category = "main"
 optional = false
 python-versions = "*"
 
@@ -1036,6 +1036,18 @@ pymysql = ["pymysql", "pymysql (<1)"]
 sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
+name = "sqlalchemy-stubs"
+version = "0.4"
+description = "SQLAlchemy stubs and mypy plugin"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+mypy = ">=0.790"
+typing-extensions = ">=3.7.4"
+
+[[package]]
 name = "sqlalchemy2-stubs"
 version = "0.0.2a29"
 description = "Typing Stubs for SQLAlchemy 1.4"
@@ -1354,7 +1366,7 @@ heapdict = "*"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<4"
-content-hash = "05e5409ff4c5e763445dfb3c9de5558f51b69872849d481a4770d21ef2b308f0"
+content-hash = "dcd1c9f20b05b7529f1599670dc7eaf490a96000cdc0f80843a9d6bc8b921a9b"
 
 [metadata.files]
 anyio = [
@@ -2304,6 +2316,10 @@ sqlalchemy = [
     {file = "SQLAlchemy-1.4.41-cp39-cp39-win32.whl", hash = "sha256:9c56e19780cd1344fcd362fd6265a15f48aa8d365996a37fab1495cae8fcd97d"},
     {file = "SQLAlchemy-1.4.41-cp39-cp39-win_amd64.whl", hash = "sha256:f5fa526d027d804b1f85cdda1eb091f70bde6fb7d87892f6dd5a48925bc88898"},
     {file = "SQLAlchemy-1.4.41.tar.gz", hash = "sha256:0292f70d1797e3c54e862e6f30ae474014648bc9c723e14a2fda730adb0a9791"},
+]
+sqlalchemy-stubs = [
+    {file = "sqlalchemy-stubs-0.4.tar.gz", hash = "sha256:c665d6dd4482ef642f01027fa06c3d5e91befabb219dc71fc2a09e7d7695f7ae"},
+    {file = "sqlalchemy_stubs-0.4-py3-none-any.whl", hash = "sha256:5eec7aa110adf9b957b631799a72fef396b23ff99fe296df726645d01e312aa5"},
 ]
 sqlalchemy2-stubs = [
     {file = "sqlalchemy2-stubs-0.0.2a29.tar.gz", hash = "sha256:1bbc6aebd76db7c0351a9f45cc1c4e8ac335ba150094c2af091e8b87b9118419"},

@@ -24,13 +24,13 @@ def fastapi_client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(scope="function")
-def in_memory_spatialite_session() -> Generator[Session, None, None]:
+def in_memory_spatialite_function_session() -> Generator[Session, None, None]:
     engine = create_engine("sqlite:///:memory:", echo=True)
     listen(engine, "connect", load_spatialite)
     conn = engine.connect()
     conn.execute(select([func.InitSpatialMetaData()]))
     SQLModel.metadata.create_all(engine)
-    with Session(engine) as session:
+    with Session(engine) as session:  # type: ignore
         yield session
     SQLModel.metadata.drop_all(engine, checkfirst=True)
     conn.close()

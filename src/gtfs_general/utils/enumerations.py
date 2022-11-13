@@ -14,7 +14,7 @@ class LocationType(Enum):
     BOARDING_AREA = 4
 
 
-class WheelchairBoarding(Enum):
+class WheelchairAccessible(Enum):
     EMPTY = 0
     ACCESSIBLE = 1
     NOT_ACCESSIBLE = 2
@@ -45,3 +45,14 @@ class ContinuousDropOff(Enum):
     NO_CONTINUOUS_DROP_OFF = 1
     PHONE_DROP_OFF = 2
     COORDINATE_DRIVER_DROP_OFF = 3
+
+
+class TravelDirection(Enum):
+    TRAVEL_IN_ONE_DIRECTION = 0
+    TRAVEL_IN_OPPOSITE_DIRECTION = 1
+
+
+class BikesAllowed(Enum):
+    NO_INFORMATION = 0
+    BICYCLES_ALLOWED = 1
+    NO_BICYCLES_ALLOWED = 2

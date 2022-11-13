@@ -1,5 +1,6 @@
 import pytest
-from sqlalchemy.exc import IntegrityError, PendingRollbackError
+from sqlalchemy.exc import PendingRollbackError  # type: ignore
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from gtfs_general.db.factories import agency_factory
@@ -37,12 +38,9 @@ from gtfs_general.db.gtfs import Agency
     ],
 )
 def test_agency(
-    agency_name: str,
-    agency_id: str,
-    expect_to_fail: bool,
-    in_memory_spatialite_session: Session,
+    agency_name: str, agency_id: str, expect_to_fail: bool, in_memory_spatialite_function_session: Session
 ) -> None:
-    session: Session = in_memory_spatialite_session
+    session: Session = in_memory_spatialite_function_session
     original_object: Agency = agency_factory(agency_id=agency_id, agency_name=agency_name)
     session.add(original_object)
     if expect_to_fail:
@@ -63,12 +61,8 @@ def test_agency(
         (None, "foo_agency"),
     ],
 )
-def test_agency_duplicate(
-    agency_id: str,
-    agency_name: str,
-    in_memory_spatialite_session: Session,
-) -> None:
-    session: Session = in_memory_spatialite_session
+def test_agency_duplicate(agency_id: str, agency_name: str, in_memory_spatialite_function_session: Session) -> None:
+    session: Session = in_memory_spatialite_function_session
     original_object = agency_factory(agency_id=agency_id, agency_name=agency_name)
     duplicate_object = agency_factory(agency_id=agency_id, agency_name=agency_name)
     session.add(original_object)

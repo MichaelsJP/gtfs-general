@@ -1,16 +1,18 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import PositiveInt
+from pydantic import NonNegativeFloat, NonNegativeInt
 from sqlmodel import Field, Relationship, SQLModel
 
 from gtfs_general.utils.enumerations import (
+    BikesAllowed,
     ContinuousDropOff,
     ContinuousPickup,
     DepartsOnDay,
     LocationType,
     RouteType,
-    WheelchairBoarding,
+    TravelDirection,
+    WheelchairAccessible,
 )
 
 
@@ -28,6 +30,35 @@ class Agency(SQLModel, table=True):
 
     class Config:
         arbitrary_types_allowed = True
+
+
+class Calendar(SQLModel, table=True):
+    service_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
+    monday: DepartsOnDay = Field(nullable=False)
+    tuesday: DepartsOnDay = Field(nullable=False)
+    wednesday: DepartsOnDay = Field(nullable=False)
+    thursday: DepartsOnDay = Field(nullable=False)
+    friday: DepartsOnDay = Field(nullable=False)
+    saturday: DepartsOnDay = Field(nullable=False)
+    sunday: DepartsOnDay = Field(nullable=False)
+    start_date: datetime = Field(nullable=False)
+    end_date: datetime = Field(nullable=False)
+
+    trips: List["Trips"] = Relationship(back_populates="service")
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class Shapes(SQLModel, table=True):
+    shape_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
+    shape_pt_lat: float = Field(nullable=False)
+    shape_pt_lon: float = Field(nullable=False)
+    shape_pt_sequence: NonNegativeInt = Field(nullable=False)
+    # Todo bug when putting NonNegativeFloat optional. It doesn't check for positivity anymore.
+    shape_dist_traveled: Optional[NonNegativeFloat] = Field(nullable=True)
+
+    trips: List["Trips"] = Relationship(back_populates="shape")
 
 
 class Stops(SQLModel, table=True):
@@ -55,7 +86,7 @@ class Stops(SQLModel, table=True):
     stations: List["Stops"] = Relationship(back_populates="parent_stop")
 
     stop_timezone: Optional[str] = Field(nullable=True)
-    wheelchair_boarding: Optional[WheelchairBoarding] = Field(nullable=True)
+    wheelchair_boarding: Optional[WheelchairAccessible] = Field(nullable=True)
     # Todo foreign key to levels
     level_id: Optional[str] = Field(nullable=True)
     platform_code: Optional[str] = Field()
@@ -72,7 +103,7 @@ class Stops(SQLModel, table=True):
 class Routes(SQLModel, table=True):
     route_id: str = Field(primary_key=True, unique=True)
 
-    agency_id: Optional[int] = Field(
+    agency_id: Optional[str] = Field(
         foreign_key="agency.agency_id",
         default=None,
         nullable=True,
@@ -86,23 +117,29 @@ class Routes(SQLModel, table=True):
     route_url: Optional[str] = Field(nullable=True)
     route_color: Optional[str] = Field(nullable=True)
     route_text_color: Optional[str] = Field(nullable=True)
-    route_sort_order: Optional[PositiveInt] = Field(nullable=True)
+    route_sort_order: Optional[NonNegativeInt] = Field(nullable=True)
     continuous_pickup: Optional[ContinuousPickup] = Field(nullable=True)
     continuous_drop_off: Optional[ContinuousDropOff] = Field(nullable=True)
 
+    trips: List["Trips"] = Relationship(back_populates="route")
 
-class Calendar(SQLModel, table=True):
-    service_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
-    monday: DepartsOnDay = Field(nullable=False)
-    tuesday: DepartsOnDay = Field(nullable=False)
-    wednesday: DepartsOnDay = Field(nullable=False)
-    thursday: DepartsOnDay = Field(nullable=False)
-    friday: DepartsOnDay = Field(nullable=False)
-    saturday: DepartsOnDay = Field(nullable=False)
-    sunday: DepartsOnDay = Field(nullable=False)
-    start_date: datetime = Field(nullable=False)
-    end_date: datetime = Field(nullable=False)
 
-    # Needed for Column(JSON)
-    class Config:
-        arbitrary_types_allowed = True
+class Trips(SQLModel, table=True):
+    route_id: str = Field(foreign_key="routes.route_id", default=None, nullable=False, primary_key=True)
+    route: Optional["Routes"] = Relationship(back_populates="trips")
+
+    # Todo add relationship for calendar
+    service_id: str = Field(foreign_key="calendar.service_id", nullable=False, primary_key=True)
+    service: Optional["Calendar"] = Relationship(back_populates="trips")
+
+    trip_id: str = Field(primary_key=True, unique=True)
+    trip_headsign: Optional[str] = Field(nullable=True)
+    trip_short_name: Optional[str] = Field(nullable=True)
+    direction_id: TravelDirection = Field(nullable=True)
+    block_id: Optional[str] = Field(nullable=True, index=True)
+
+    shape_id: str = Field(foreign_key="shapes.shape_id", default=None, nullable=True)
+    shape: Optional["Shapes"] = Relationship(back_populates="trips")
+
+    wheelchair_accessible: Optional[WheelchairAccessible] = Field(nullable=True)
+    bikes_allowed: Optional[BikesAllowed] = Field(nullable=True)

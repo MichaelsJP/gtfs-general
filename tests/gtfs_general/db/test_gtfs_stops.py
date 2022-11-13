@@ -1,5 +1,6 @@
 import pytest
-from sqlalchemy.exc import IntegrityError, PendingRollbackError
+from sqlalchemy.exc import PendingRollbackError  # type: ignore
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from gtfs_general.db.factories import stops_factory
@@ -13,9 +14,9 @@ from gtfs_general.db.gtfs import Stops
 def test_stops(
     stop_id: str,
     expect_to_fail: bool,
-    in_memory_spatialite_session: Session,
+    in_memory_spatialite_function_session: Session,
 ) -> None:
-    session: Session = in_memory_spatialite_session
+    session: Session = in_memory_spatialite_function_session
     original_object = stops_factory(stop_id=stop_id)
     session.add(original_object)
     if expect_to_fail:
@@ -29,10 +30,8 @@ def test_stops(
         assert object_from_db[0] == original_object
 
 
-def test_stops_foreign_key(
-    in_memory_spatialite_session: Session,
-) -> None:
-    session: Session = in_memory_spatialite_session
+def test_stops_foreign_key(in_memory_spatialite_function_session: Session) -> None:
+    session: Session = in_memory_spatialite_function_session
     first_object: Stops = stops_factory(stop_id="1_stop_id", parent_stop=None)
     second_object: Stops = stops_factory(stop_id="2_stop_id", parent_stop=first_object)
     third_object: Stops = stops_factory(stop_id="3_stop_id", parent_stop=first_object)
@@ -44,10 +43,8 @@ def test_stops_foreign_key(
     assert third_object in first_object.stations
 
 
-def test_stops_duplicate_fail(
-    in_memory_spatialite_session: Session,
-) -> None:
-    session: Session = in_memory_spatialite_session
+def test_stops_duplicate_fail(in_memory_spatialite_function_session: Session) -> None:
+    session: Session = in_memory_spatialite_function_session
     first_object: Stops = stops_factory(stop_id="1_stop_id", parent_stop=None)
     duplicate_object: Stops = stops_factory(stop_id="1_stop_id", parent_stop=None)
     session.add(first_object)

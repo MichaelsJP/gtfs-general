@@ -27,6 +27,7 @@ geoalchemy2 = "^0.12.5"
 tox = "^3.27.0"
 sqlmodel = "^0.0.8"
 psycopg2 = "^2.9.5"
+sqlalchemy-stubs = "^0.4"
 
 
 
@@ -85,4 +86,6 @@ filterwarnings = [
     "ignore:::.*tests.gtfs_general.db.test_gtfs_calendar*",
     "ignore:::.*tests.gtfs_general.db.test_gtfs_routes*",
     "ignore:::.*tests.gtfs_general.db.test_gtfs_stops*",
+    "ignore:::.*tests.gtfs_general.db.test_gtfs_shapes*",
+    "ignore:::.*tests.gtfs_general.db.test_gtfs_trips*",
 ]

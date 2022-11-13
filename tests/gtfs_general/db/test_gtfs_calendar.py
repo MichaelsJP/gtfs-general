@@ -1,7 +1,8 @@
 import datetime
 
 import pytest
-from sqlalchemy.exc import IntegrityError, PendingRollbackError
+from sqlalchemy.exc import PendingRollbackError  # type: ignore
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from gtfs_general.db import Calendar
@@ -48,9 +49,9 @@ def test_calendar(
     start_date: datetime.datetime,
     end_date: datetime.datetime,
     expect_to_fail: bool,
-    in_memory_spatialite_session: Session,
+    in_memory_spatialite_function_session: Session,
 ) -> None:
-    session: Session = in_memory_spatialite_session
+    session: Session = in_memory_spatialite_function_session
     original_object = calendar_factory(
         service_id=service_id,
         start_date=start_date,
@@ -68,10 +69,8 @@ def test_calendar(
         assert object_from_db[0] == original_object
 
 
-def test_calendar_duplicate_fail(
-    in_memory_spatialite_session: Session,
-) -> None:
-    session: Session = in_memory_spatialite_session
+def test_calendar_duplicate_fail(in_memory_spatialite_function_session: Session) -> None:
+    session: Session = in_memory_spatialite_function_session
     start_date = datetime.datetime.now()
     end_date = datetime.datetime.now() + datetime.timedelta(days=8)
     first_object = calendar_factory(

@@ -1,5 +1,6 @@
 import pytest
-from sqlalchemy.exc import IntegrityError, PendingRollbackError
+from sqlalchemy.exc import PendingRollbackError  # type: ignore
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
 from gtfs_general.db.factories import agency_factory, routes_factory
@@ -16,12 +17,9 @@ from gtfs_general.db.gtfs import Agency, Routes
     ],
 )
 def test_routes(
-    route_id: str,
-    agency_id: str,
-    expect_to_fail: bool,
-    in_memory_spatialite_session: Session,
+    route_id: str, agency_id: str, expect_to_fail: bool, in_memory_spatialite_function_session: Session
 ) -> None:
-    session: Session = in_memory_spatialite_session
+    session: Session = in_memory_spatialite_function_session
     original_object: Routes = routes_factory(route_id=route_id, agency_id=agency_id)
     session.add(original_object)
     if expect_to_fail:
@@ -35,10 +33,8 @@ def test_routes(
         assert object_from_db[0] == original_object
 
 
-def test_routes_foreign_key(
-    in_memory_spatialite_session: Session,
-) -> None:
-    session: Session = in_memory_spatialite_session
+def test_routes_foreign_key(in_memory_spatialite_function_session: Session) -> None:
+    session: Session = in_memory_spatialite_function_session
     agency: Agency = agency_factory(agency_name="1_agency", agency_id="1_agency")
     session.add(agency)
     session.commit()
@@ -58,10 +54,8 @@ def test_routes_foreign_key(
     assert third_object.agency_id == agency.agency_id
 
 
-def test_routes_duplicate_fail(
-    in_memory_spatialite_session: Session,
-) -> None:
-    session: Session = in_memory_spatialite_session
+def test_routes_duplicate_fail(in_memory_spatialite_function_session: Session) -> None:
+    session: Session = in_memory_spatialite_function_session
     first_object: Routes = routes_factory(route_id="1_route_id", agency=None)
     duplicate_object: Routes = routes_factory(route_id="1_route_id", agency=None)
     session.add(first_object)

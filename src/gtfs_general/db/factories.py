@@ -10,9 +10,12 @@ from gtfs_general.db.gtfs import (
     LocationType,
     Routes,
     RouteType,
+    Shapes,
     Stops,
-    WheelchairBoarding,
+    Trips,
+    WheelchairAccessible,
 )
+from gtfs_general.utils.enumerations import BikesAllowed, TravelDirection
 
 
 def stops_factory(stop_id: str, parent_stop: Optional[Stops] = None) -> Stops:
@@ -28,7 +31,7 @@ def stops_factory(stop_id: str, parent_stop: Optional[Stops] = None) -> Stops:
         location_type=LocationType.STOP_OR_PLATTFORM,
         parent_stop=parent_stop,
         stop_timezone=f"{stop_id}_stop_timezone",
-        wheelchair_boarding=WheelchairBoarding.ACCESSIBLE,
+        wheelchair_boarding=WheelchairAccessible.ACCESSIBLE,
         level_id=f"{stop_id}_level_id",
         platform_code=f"{stop_id}_platform_code",
     )
@@ -89,4 +92,35 @@ def routes_factory(
         route_sort_order=route_sort_order,
         continuous_pickup=continuous_pickup,
         continuous_drop_off=continuous_drop_off,
+    )
+
+
+def trips_factory(route_id: str, service_id: str, trip_id: str, shape_id: Optional[str] = None) -> Trips:
+    return Trips(
+        route_id=route_id,
+        service_id=service_id,
+        trip_id=trip_id,
+        trip_headsign=f"{trip_id}_trip_headsign",
+        trip_short_name=f"{trip_id}_trip_short_name",
+        direction_id=TravelDirection.TRAVEL_IN_ONE_DIRECTION,
+        block_id=f"{trip_id}_block_id",
+        shape_id=shape_id,
+        wheelchair_accessible=WheelchairAccessible.ACCESSIBLE,
+        bikes_allowed=BikesAllowed.BICYCLES_ALLOWED,
+    )
+
+
+def shapes_factory(
+    shape_id: str,
+    shape_pt_lat: float = 9.343212233,
+    shape_pt_lon: float = 45.08930220,
+    shape_pt_sequence: int = 1,
+    shape_dist_traveled: Optional[float] = 0,
+) -> Shapes:
+    return Shapes(
+        shape_id=shape_id,
+        shape_pt_lat=shape_pt_lat,
+        shape_pt_lon=shape_pt_lon,
+        shape_pt_sequence=shape_pt_sequence,
+        shape_dist_traveled=shape_dist_traveled,
     )

@@ -163,17 +163,17 @@ repos:
     hooks:
     - id: black
       name: Black
-      entry: black src tests
+      entry: black --check src tests
       language: system
       pass_filenames: false
     - id: isort
       name: Isort
-      entry: isort --diff --single-line-exclusions=.venv310 src tests
+      entry: isort --check-only --diff --single-line-exclusions='.venv*' src tests
       language: system
       pass_filenames: false
     - id: flake8
       name: Flake8
-      entry: flake8 --jobs=2 src tests
+      entry: flake8 src tests
       language: system
       pass_filenames: false
     - id: mypy
