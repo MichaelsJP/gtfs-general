@@ -32,35 +32,6 @@ class Agency(SQLModel, table=True):
         arbitrary_types_allowed = True
 
 
-class Calendar(SQLModel, table=True):
-    service_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
-    monday: DepartsOnDay = Field(nullable=False)
-    tuesday: DepartsOnDay = Field(nullable=False)
-    wednesday: DepartsOnDay = Field(nullable=False)
-    thursday: DepartsOnDay = Field(nullable=False)
-    friday: DepartsOnDay = Field(nullable=False)
-    saturday: DepartsOnDay = Field(nullable=False)
-    sunday: DepartsOnDay = Field(nullable=False)
-    start_date: datetime = Field(nullable=False)
-    end_date: datetime = Field(nullable=False)
-
-    trips: List["Trips"] = Relationship(back_populates="service")
-
-    class Config:
-        arbitrary_types_allowed = True
-
-
-class Shapes(SQLModel, table=True):
-    shape_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
-    shape_pt_lat: float = Field(nullable=False)
-    shape_pt_lon: float = Field(nullable=False)
-    shape_pt_sequence: NonNegativeInt = Field(nullable=False)
-    # Todo bug when putting NonNegativeFloat optional. It doesn't check for positivity anymore.
-    shape_dist_traveled: Optional[NonNegativeFloat] = Field(nullable=True)
-
-    trips: List["Trips"] = Relationship(back_populates="shape")
-
-
 class Stops(SQLModel, table=True):
     stop_id: str = Field(primary_key=True, unique=True)
     stop_code: Optional[str] = Field(nullable=True)
@@ -143,3 +114,32 @@ class Trips(SQLModel, table=True):
 
     wheelchair_accessible: Optional[WheelchairAccessible] = Field(nullable=True)
     bikes_allowed: Optional[BikesAllowed] = Field(nullable=True)
+
+
+class Calendar(SQLModel, table=True):
+    service_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
+    monday: DepartsOnDay = Field(nullable=False)
+    tuesday: DepartsOnDay = Field(nullable=False)
+    wednesday: DepartsOnDay = Field(nullable=False)
+    thursday: DepartsOnDay = Field(nullable=False)
+    friday: DepartsOnDay = Field(nullable=False)
+    saturday: DepartsOnDay = Field(nullable=False)
+    sunday: DepartsOnDay = Field(nullable=False)
+    start_date: datetime = Field(nullable=False)
+    end_date: datetime = Field(nullable=False)
+
+    trips: List["Trips"] = Relationship(back_populates="service")
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class Shapes(SQLModel, table=True):
+    shape_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
+    shape_pt_lat: float = Field(nullable=False)
+    shape_pt_lon: float = Field(nullable=False)
+    shape_pt_sequence: NonNegativeInt = Field(nullable=False)
+    # Todo bug when putting NonNegativeFloat optional. It doesn't check for positivity anymore.
+    shape_dist_traveled: Optional[NonNegativeFloat] = Field(nullable=True)
+
+    trips: List["Trips"] = Relationship(back_populates="shape")
