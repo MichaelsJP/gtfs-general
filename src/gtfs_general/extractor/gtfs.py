@@ -4,12 +4,11 @@ import errno
 import os
 import tempfile
 import zipfile
-
 from pathlib import Path
-from typing import Any, Tuple, Dict
+from typing import Any, Dict, Tuple
 
-from dask import dataframe as ddf
 import numpy as np
+from dask import dataframe as ddf
 
 from src.gtfs_general import logger
 from src.gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
@@ -194,7 +193,7 @@ class GtfsFiles:
             logger.warn(f"Unknown file found: {file_path}")
 
     def required_is_complete(self) -> bool:
-        if all(
+        return all(
             [
                 self.agency,
                 self.calendar_dates,
@@ -205,9 +204,7 @@ class GtfsFiles:
                 self.stops,
                 self.trips,
             ]
-        ):
-            return True
-        return False
+        )
 
 
 class GTFS:

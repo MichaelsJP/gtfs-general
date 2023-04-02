@@ -18,7 +18,7 @@
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.2.0
+    rev: v4.4.0
     hooks:
       - id: check-added-large-files
         args: ['--maxkb=1024']
@@ -36,43 +36,150 @@ repos:
       - id: fix-encoding-pragma
         args: ["--remove"]
       - id: trailing-whitespace
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: end-of-file-fixer
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: check-yaml
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: check-json
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: forbid-new-submodules
       - id: mixed-line-ending
         args: [ '--fix=lf' ]
         description: Forces to replace line ending by the UNIX 'lf' character.
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: pretty-format-json
         args: [ '--no-sort-keys' ]
-        exclude: ^.venv*|output
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
       - id: no-commit-to-branch
-        args: [ --branch, master ]
-        exclude: ^.venv*|output
+        args: [ --branch, main ]
+        exclude: |
+          (?x)(
+              ^.git/ |
+              ^.github/ |
+              ^.frontend/ |
+              ^.git/ |
+              ^__pycache__/ |
+              ^__init__.py/ |
+              ^.mypy_cache/ |
+              ^.pytest_cache/ |
+              ^.venv*/ |
+              ^.tox/ |
+              ^.idea/ |
+              ^output/ |
+              ^input/
+          )
   - repo: local
     hooks:
     - id: black
       name: Black
-      entry: black .
+      entry: black src tests
       language: system
       pass_filenames: false
     - id: isort
       name: Isort
-      entry: isort --diff --single-line-exclusions=.venv310 .
+      entry: isort --check-only --diff --single-line-exclusions='.venv*' src tests
       language: system
       pass_filenames: false
     - id: flake8
       name: Flake8
-      entry: flake8 .
+      entry: flake8 src tests
       language: system
       pass_filenames: false
-    - id: mypy
-      name: Mypy
-      entry: mypy .
-      language: system
-      pass_filenames: false
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.1.1
+    hooks:
+      - id: mypy
+        args: [--no-strict-optional]
+        additional_dependencies:
+          - types-PyYAML

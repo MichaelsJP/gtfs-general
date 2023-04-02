@@ -5,11 +5,11 @@ import errno
 import os
 import shutil
 from datetime import datetime
+from pathlib import Path
+from typing import Dict, List, Set, Tuple, Union
+
 import dask.dataframe as ddf
 import pandas as pd
-from pathlib import Path
-from typing import List, Set, Union, Dict, Tuple
-
 from tqdm.dask import TqdmCallback
 
 from src.gtfs_general import logger
@@ -28,7 +28,7 @@ class Extractor(GTFS):
             logger.debug(f"Creating output folder: {output_folder}")
             os.makedirs(output_folder)
         else:
-            logger.warn("Output folder exists. Using it.")
+            logger.warning("Output folder exists. Using it.")
         if not output_folder.exists():
             logger.error(f"Check access rights. Couldn't find and create the output folder {output_folder}")
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), output_folder)

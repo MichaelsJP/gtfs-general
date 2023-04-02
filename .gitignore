@@ -135,3 +135,4 @@ dmypy.json
 /src/gtfs_general/extractor/filters.py
 /output/
 /input/
+/tests/**/**/memory
