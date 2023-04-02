@@ -155,5 +155,10 @@ Cut by date
 python -m gtfs_general extract-date --input-object [zip/folder] --output-folder  --start-date "20220601" --end-date "20220701"
 ```
 
+## Database
+Install
+- sqlite3
+- libspatialite
+
 ## Credit
 This tool was inspired by https://github.com/gberaudo/gtfs_extractor
