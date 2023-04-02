@@ -12,10 +12,11 @@ from gtfs_general.db.gtfs import (
     RouteType,
     Shapes,
     Stops,
+    StopTimes,
     Trips,
     WheelchairAccessible,
 )
-from gtfs_general.utils.enumerations import BikesAllowed, TravelDirection
+from gtfs_general.utils.enumerations import BikesAllowed, DropOffType, PickupType, TimePoint, TravelDirection
 
 
 def stops_factory(stop_id: str, parent_stop: Optional[Stops] = None) -> Stops:
@@ -123,4 +124,28 @@ def shapes_factory(
         shape_pt_lon=shape_pt_lon,
         shape_pt_sequence=shape_pt_sequence,
         shape_dist_traveled=shape_dist_traveled,
+    )
+
+
+def stop_times_factory(
+    trip_id: str,
+    stop_id: str,
+    stop_sequence: int,
+    arrival_time: datetime.datetime = datetime.datetime.now(),
+    departure_time: datetime.datetime = datetime.datetime.now() + datetime.timedelta(minutes=8),
+    shape_dist_traveled: int = 1,
+) -> StopTimes:
+    return StopTimes(
+        trip_id=trip_id,
+        arrival_time=arrival_time,
+        departure_time=departure_time,
+        stop_id=stop_id,
+        stop_sequence=stop_sequence,
+        stop_headsign="Foo_Headsign",
+        pickup_type=PickupType.PHONE_PICKUP,
+        drop_off_type=DropOffType.REGULAR_DROP_OFF,
+        continuous_pickup=ContinuousPickup.NO_CONTINUOUS_PICKUP,
+        continuous_drop_off=ContinuousDropOff.COORDINATE_DRIVER_DROP_OFF,
+        shape_dist_traveled=shape_dist_traveled,
+        timepoint=TimePoint.TIMES_ARE_EXACT,
     )

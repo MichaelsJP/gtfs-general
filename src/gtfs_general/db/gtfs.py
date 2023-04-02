@@ -1,7 +1,8 @@
 from datetime import datetime
+from decimal import Decimal
 from typing import List, Optional
 
-from pydantic import NonNegativeFloat, NonNegativeInt
+from pydantic import NonNegativeInt, condecimal
 from sqlmodel import Field, Relationship, SQLModel
 
 from gtfs_general.utils.enumerations import (
@@ -9,8 +10,11 @@ from gtfs_general.utils.enumerations import (
     ContinuousDropOff,
     ContinuousPickup,
     DepartsOnDay,
+    DropOffType,
     LocationType,
+    PickupType,
     RouteType,
+    TimePoint,
     TravelDirection,
     WheelchairAccessible,
 )
@@ -61,6 +65,8 @@ class Stops(SQLModel, table=True):
     # Todo foreign key to levels
     level_id: Optional[str] = Field(nullable=True)
     platform_code: Optional[str] = Field()
+
+    stop_times: List["StopTimes"] = Relationship(back_populates="stop")
 
     class Config:
         arbitrary_types_allowed = True
@@ -115,6 +121,33 @@ class Trips(SQLModel, table=True):
     wheelchair_accessible: Optional[WheelchairAccessible] = Field(nullable=True)
     bikes_allowed: Optional[BikesAllowed] = Field(nullable=True)
 
+    stop_times: List["StopTimes"] = Relationship(back_populates="trip")
+
+
+class StopTimes(SQLModel, table=True):
+    trip_id: str = Field(foreign_key="trips.trip_id", default=None, nullable=False, primary_key=True)
+    trip: Optional["Trips"] = Relationship(back_populates="stop_times")
+
+    arrival_time: Optional[datetime] = Field(nullable=True)
+    departure_time: Optional[datetime] = Field(nullable=True)
+
+    stop_id: str = Field(foreign_key="stops.stop_id", default=None, nullable=False, primary_key=True)
+    stop: Optional["Stops"] = Relationship(back_populates="stop_times")
+
+    stop_sequence: NonNegativeInt = Field(nullable=False)
+    stop_headsign: Optional[str] = Field(nullable=True)
+    pickup_type: Optional[PickupType] = Field(nullable=True)
+    drop_off_type: Optional[DropOffType] = Field(nullable=True)
+    continuous_pickup: Optional[ContinuousPickup] = Field(nullable=True)
+    continuous_drop_off: Optional[ContinuousDropOff] = Field(nullable=True)
+    shape_dist_traveled: Optional[condecimal(ge=Decimal(0),)] = Field(
+        default=0
+    )  # Bug. Sqlmodel is ignoring condition for now.
+    timepoint: Optional[TimePoint] = Field(nullable=True)
+
+    class Config:
+        arbitrary_types_allowed = True
+
 
 class Calendar(SQLModel, table=True):
     service_id: str = Field(primary_key=True, index=True, nullable=False, unique=True)
@@ -140,6 +173,10 @@ class Shapes(SQLModel, table=True):
     shape_pt_lon: float = Field(nullable=False)
     shape_pt_sequence: NonNegativeInt = Field(nullable=False)
     # Todo bug when putting NonNegativeFloat optional. It doesn't check for positivity anymore.
-    shape_dist_traveled: Optional[NonNegativeFloat] = Field(nullable=True)
+    shape_dist_traveled: Optional[
+        condecimal(
+            ge=Decimal(0),
+        )
+    ] = Field(nullable=True)
 
     trips: List["Trips"] = Relationship(back_populates="shape")

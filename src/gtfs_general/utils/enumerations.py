@@ -47,6 +47,20 @@ class ContinuousDropOff(Enum):
     COORDINATE_DRIVER_DROP_OFF = 3
 
 
+class PickupType(Enum):
+    REGULAR_SCHEDULED_PICKUP = 0
+    NO_PICKUP_AVAILABLE = 1
+    PHONE_PICKUP = 2
+    COORDINATE_DRIVER_PICKUP = 3
+
+
+class DropOffType(Enum):
+    REGULAR_DROP_OFF = 0
+    NO_DROP_OFF_AVAILABLE = 1
+    PHONE_DROP_OFF = 2
+    COORDINATE_DRIVER_DROP_OFF = 3
+
+
 class TravelDirection(Enum):
     TRAVEL_IN_ONE_DIRECTION = 0
     TRAVEL_IN_OPPOSITE_DIRECTION = 1
@@ -56,3 +70,8 @@ class BikesAllowed(Enum):
     NO_INFORMATION = 0
     BICYCLES_ALLOWED = 1
     NO_BICYCLES_ALLOWED = 2
+
+
+class TimePoint(Enum):
+    TIMES_ARE_APPROXIMATE = 0
+    TIMES_ARE_EXACT = 1
