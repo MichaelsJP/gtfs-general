@@ -6,6 +6,8 @@ authors = ["Julian Psotta <julianpsotta@gmail.com>"]
 readme = "README.md"
 packages = [{include = "gtfs_general", from = "src"}]
 
+siehe Telegram Nachricht.
+
 [tool.poetry.scripts]
 gtfs-general = "gtfs_general.main:app"
 
