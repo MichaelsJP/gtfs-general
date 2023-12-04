@@ -1,7 +1,7 @@
 import pathlib
 from typing import List
 
-from py._path.local import LocalPath
+from _pytest._py.path import LocalPath
 from typer.testing import CliRunner
 
 from gtfs_general import main
