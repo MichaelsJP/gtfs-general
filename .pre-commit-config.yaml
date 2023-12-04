@@ -58,21 +58,23 @@ repos:
     hooks:
     - id: black
       name: Black
-      entry: black .
+      entry: black src tests
       language: system
       pass_filenames: false
     - id: isort
       name: Isort
-      entry: isort --diff --single-line-exclusions=.venv310 .
+      entry: isort --check-only --diff --single-line-exclusions='.venv*' src tests
       language: system
       pass_filenames: false
     - id: flake8
       name: Flake8
-      entry: flake8 .
+      entry: flake8 src tests
       language: system
       pass_filenames: false
-    - id: mypy
-      name: Mypy
-      entry: mypy .
-      language: system
-      pass_filenames: false
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.1.1
+    hooks:
+      - id: mypy
+        args: [--no-strict-optional]
+        additional_dependencies:
+          - types-PyYAML

@@ -4,10 +4,8 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-import yaml
-
 import dask.config
-
+import yaml
 
 config_file = os.path.join(os.path.dirname(__file__), "../../dask.yaml")
 

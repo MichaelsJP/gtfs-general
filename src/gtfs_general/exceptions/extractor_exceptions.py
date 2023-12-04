@@ -4,8 +4,6 @@ from src.gtfs_general import logger
 class CustomException(Exception):
     """Base custom exception class"""
 
-    pass
-
 
 class GtfsIncompleteException(CustomException):
     def __init__(self) -> None:
