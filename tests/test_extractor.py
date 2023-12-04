@@ -13,7 +13,6 @@ script_path = pathlib.Path(__file__).parent.resolve()
 
 
 def check_file_consistency(directory: LocalPath) -> None:
-    file: pathlib.PosixPath
     output_files: List = [file for file in pathlib.Path(directory.__str__()).glob("*.txt")]
     assert len(output_files) == 9
 
@@ -36,7 +35,6 @@ def check_file_consistency(directory: LocalPath) -> None:
 
 
 def check_ic_ice_gtfs_germany_bbox_extraction_results(directory: LocalPath) -> None:
-    file: pathlib.PosixPath
     output_files: List = [file for file in pathlib.Path(directory.__str__()).glob("*.txt")]
 
     for file in output_files:

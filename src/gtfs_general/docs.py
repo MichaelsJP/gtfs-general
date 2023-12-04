@@ -5,7 +5,6 @@ import typer
 import typer.core
 from click import Command, Group
 
-
 app = typer.Typer()
 
 
