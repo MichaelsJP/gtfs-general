@@ -51,8 +51,18 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
-      - name: Install poetry
-        run: pipx install poetry
+      - name: Clear apt-get cache
+        run: sudo apt-get clean -y
+      - name: Cache libspatialite-dev
+        uses: actions/cache@v2
+        with:
+          path: '/var/cache/apt/archives/'
+          key: apt-get packages
+      - name: Install poetry and libspatialite-dev
+        run: |
+          pipx install poetry
+          sudo apt-get update
+          sudo apt-get install --only-upgrade libspatialite-dev -y
       - uses: actions/setup-python@v5
       - name: Set up testing Python ${{ matrix.config.python-version }}
         uses: actions/setup-python@v4
