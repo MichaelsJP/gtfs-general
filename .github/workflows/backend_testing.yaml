@@ -62,7 +62,7 @@ jobs:
         run: |
           pipx install poetry
           sudo apt-get update
-          sudo apt-get install --only-upgrade libspatialite-dev -y
+          sudo apt-get install libspatialite-dev -y
       - uses: actions/setup-python@v5
       - name: Set up testing Python ${{ matrix.config.python-version }}
         uses: actions/setup-python@v4
