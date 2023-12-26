@@ -20,7 +20,9 @@ def test_client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(scope="function")
-def gtfs_test_folder(tmp_path_factory: TempPathFactory) -> Generator[Path, None, None]:
+def gtfs_test_folder(
+    tmp_path_factory: TempPathFactory,
+) -> Generator[Path, None, None]:
     tmp_path: Path = tmp_path_factory.mktemp("test_files")
     test_gtfs_file: str = script_path.joinpath("files/ic_ice_gtfs_germany.zip").__str__()
     with zipfile.ZipFile(test_gtfs_file, "r") as zip_ref:

@@ -11,6 +11,6 @@ script_path = pathlib.Path(__file__).parent.resolve()
 
 
 def test_server(test_client: TestClient) -> None:
-    response = test_client.get(f"{settings.API_V1_STR}/login")
+    response = test_client.get(f"{settings.API_V1_STR}/health")
     assert response.status_code == 200
-    assert response.json() == ["Success!"]
+    assert response.json() == ["healthy!"]

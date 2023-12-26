@@ -80,7 +80,12 @@ def get_docs_for_click(
             use_prefix = ""
             if command_name:
                 use_prefix += f"{command_name}"
-            docs += get_docs_for_click(obj=command_obj, ctx=ctx, indent=indent + 1, call_prefix=use_prefix)
+            docs += get_docs_for_click(
+                obj=command_obj,
+                ctx=ctx,
+                indent=indent + 1,
+                call_prefix=use_prefix,
+            )
     return docs
 
 

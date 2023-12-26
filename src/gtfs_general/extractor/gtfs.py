@@ -27,7 +27,11 @@ class GtfsDtypes:
         "agency_fare_url": np.str_,
         "agency_email": np.str_,
     }
-    calendar_dates: Dict = {"service_id": np.str_, "date": np.str_, "exception_type": "Int64"}
+    calendar_dates: Dict = {
+        "service_id": np.str_,
+        "date": np.str_,
+        "exception_type": "Int64",
+    }
     calendar: Dict = {
         "monday": "Int64",
         "tuesday": "Int64",
@@ -210,7 +214,12 @@ class GtfsFiles:
 
 
 class GTFS:
-    def __init__(self, input_object: Path, cpu_count: int | None = None, scheduler: str = "multiprocessing") -> None:
+    def __init__(
+        self,
+        input_object: Path,
+        cpu_count: int | None = None,
+        scheduler: str = "multiprocessing",
+    ) -> None:
         self._input_folder: Path = input_object
         self._temporary_folder_context: Any[tempfile.TemporaryDirectory, None] = None
         self._gtfs_files: GtfsFiles = GtfsFiles()
@@ -261,6 +270,8 @@ class GTFS:
             low_memory=False,
         )
         xmin, xmax = ddf.compute(
-            csv_chunks["start_date"].min(), csv_chunks["end_date"].max(), num_workers=self._cpu_count
+            csv_chunks["start_date"].min(),
+            csv_chunks["end_date"].max(),
+            num_workers=self._cpu_count,
         )
         return xmin.strftime("%Y-%m-%d %H:%M:%S"), xmax.strftime("%Y-%m-%d %H:%M:%S")
