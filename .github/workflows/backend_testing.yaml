@@ -40,8 +40,6 @@ jobs:
       fail-fast: true
       matrix:
         config:
-          - python-version: '3.8'
-            tox: py38
           - python-version: '3.9'
             tox: py39
           - python-version: '3.10'
@@ -73,7 +71,7 @@ jobs:
         with:
           path: .tox
           key: tox-${{ matrix.os }}-poetry-${{ matrix.poetry-version }}-python-${{ matrix.config.python-version }}-${{ hashFiles('**/poetry.lock') }}
-      - name: Run tox
+      - name: Run tox38
         run: |
           poetry run tox -e pytest-${{ matrix.config.tox }}
 #      - name: Upload coverage to Codecov
