@@ -68,7 +68,7 @@ def test_version() -> None:
 
 
 def test_extract_by_bbox_with_file(tmpdir: LocalPath) -> None:
-    test_gtfs_file: str = script_path.joinpath("../../files/ic_ice_gtfs_germany.zip").__str__()
+    test_gtfs_file: str = script_path.joinpath("../files/ic_ice_gtfs_germany.zip").__str__()
 
     result = runner.invoke(
         main.app,
