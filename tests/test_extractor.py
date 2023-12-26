@@ -34,7 +34,9 @@ def check_file_consistency(directory: LocalPath) -> None:
     assert all([file in expected_files for file in actual_files])
 
 
-def check_ic_ice_gtfs_germany_bbox_extraction_results(directory: LocalPath) -> None:
+def check_ic_ice_gtfs_germany_bbox_extraction_results(
+    directory: LocalPath,
+) -> None:
     output_files: List = [file for file in pathlib.Path(directory.__str__()).glob("*.txt")]
 
     for file in output_files:
@@ -114,7 +116,13 @@ def test_extract_by_bbox_with_folder(gtfs_test_folder: pathlib.Path, tmpdir: Loc
 def test_get_metadata(gtfs_test_folder: pathlib.Path) -> None:
     result = runner.invoke(
         main.app,
-        ["--logging", "INFO", "metadata", "--input-object", gtfs_test_folder.__str__()],
+        [
+            "--logging",
+            "INFO",
+            "metadata",
+            "--input-object",
+            gtfs_test_folder.__str__(),
+        ],
     )
     assert result.exit_code == 0
     assert "Service date window from '2022-10-02 00:00:00' to '2022-10-09 00:00:00'" in result.stdout

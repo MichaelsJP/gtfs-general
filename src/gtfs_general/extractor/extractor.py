@@ -21,7 +21,11 @@ from src.gtfs_general.extractor.utils import parse_date_from_str
 
 class Extractor(GTFS):
     def __init__(
-        self, input_object: Path, output_folder: Path, scheduler: str = "multiprocessing", cpu_count: int | None = None
+        self,
+        input_object: Path,
+        output_folder: Path,
+        scheduler: str = "multiprocessing",
+        cpu_count: int | None = None,
     ) -> None:
         super().__init__(input_object, scheduler=scheduler, cpu_count=cpu_count)
         if not output_folder.exists():
@@ -68,7 +72,11 @@ class Extractor(GTFS):
             raise GtfsFileNotFound(file_path=file_path.__str__())
         output_path = self._output_folder.joinpath(file_path.name)
         csv_chunks: ddf.DataFrame = ddf.read_csv(
-            file_path, usecols=usecols, dtype=dtype, low_memory=low_memory, assume_missing=True
+            file_path,
+            usecols=usecols,
+            dtype=dtype,
+            low_memory=low_memory,
+            assume_missing=True,
         )
         original_return_columns: List | None = return_columns
         if return_columns:
@@ -77,11 +85,19 @@ class Extractor(GTFS):
         if write_out:
             with TqdmCallback(desc=f"Filter {file_path.name}/Output to CSV"):
                 ddf_out.compute(scheduler=self._scheduler, num_workers=self._cpu_count).to_csv(
-                    output_path, index=False, doublequote=True, quoting=csv.QUOTE_ALL
+                    output_path,
+                    index=False,
+                    doublequote=True,
+                    quoting=csv.QUOTE_ALL,
                 )
         if isinstance(return_columns, List) and len(return_columns) > 0:
             if write_out:
-                ddf_out = ddf.read_csv(output_path, dtype=dtype, low_memory=low_memory, assume_missing=True)
+                ddf_out = ddf.read_csv(
+                    output_path,
+                    dtype=dtype,
+                    low_memory=low_memory,
+                    assume_missing=True,
+                )
             with TqdmCallback(desc="Load results", unit=" chunks"):
                 results: pd.DataFrame = ddf_out[return_columns].compute(
                     scheduler=self._scheduler, num_workers=self._cpu_count
@@ -178,7 +194,11 @@ class Extractor(GTFS):
     def _filter_agencies(self, agency_ids_to_keep: Set) -> None:
         logger.info("Filter agencies.txt")
         self.__filter_rows_by_custom_column(
-            self._gtfs_files.agency, agency_ids_to_keep, columns=["agency_id"], write_out=True, dtype=GtfsDtypes.agency
+            self._gtfs_files.agency,
+            agency_ids_to_keep,
+            columns=["agency_id"],
+            write_out=True,
+            dtype=GtfsDtypes.agency,
         )
 
     def _filter_calendar_dates_using_services(self, service_ids_to_keep: Set) -> None:
@@ -215,7 +235,11 @@ class Extractor(GTFS):
     def _filter_stops(self, stop_ids_to_keep: Set) -> None:
         logger.info("Filter stops.txt")
         self.__filter_rows_by_custom_column(
-            self._gtfs_files.stops, stop_ids_to_keep, columns=["stop_id"], write_out=True, dtype=GtfsDtypes.stops
+            self._gtfs_files.stops,
+            stop_ids_to_keep,
+            columns=["stop_id"],
+            write_out=True,
+            dtype=GtfsDtypes.stops,
         )
 
     def _filter_transfers_using_stops(self, stop_ids_to_keep: Set) -> None:
@@ -278,7 +302,10 @@ class Extractor(GTFS):
 
         # Copy the feed info
         logger.info("Copy feed_info.txt to new location")
-        shutil.copyfile(self._gtfs_files.feed_info, self._output_folder.joinpath(self._gtfs_files.feed_info.name))
+        shutil.copyfile(
+            self._gtfs_files.feed_info,
+            self._output_folder.joinpath(self._gtfs_files.feed_info.name),
+        )
 
     def _get_output_files(self) -> List:
         files: List = []
@@ -304,7 +331,11 @@ class Extractor(GTFS):
         route_ids_to_keep: Set
         service_ids_to_keep: Set
         shape_ids_to_keep: Set
-        route_ids_to_keep, service_ids_to_keep, shape_ids_to_keep = self._filter_trips(trip_ids)
+        (
+            route_ids_to_keep,
+            service_ids_to_keep,
+            shape_ids_to_keep,
+        ) = self._filter_trips(trip_ids)
         logger.info("Found {} routes in bbox".format(len(route_ids_to_keep)))
 
         logger.info("Filter agencies")
@@ -328,7 +359,11 @@ class Extractor(GTFS):
 
         logger.info("Filter trips from selected calendar entries")
         trip_ids_to_keep: Set
-        route_ids_to_keep, trip_ids_to_keep, shape_ids_to_keep = self._filter_trips_by_service_ids(service_ids_to_keep)
+        (
+            route_ids_to_keep,
+            trip_ids_to_keep,
+            shape_ids_to_keep,
+        ) = self._filter_trips_by_service_ids(service_ids_to_keep)
         logger.info(f"Found {len(trip_ids_to_keep)} trips between dates")
 
         logger.info("Filter agencies")
@@ -339,6 +374,9 @@ class Extractor(GTFS):
 
         self._filter_shapes(shape_ids_to_keep)
 
-        self._process_common_files(service_ids_to_keep=service_ids_to_keep, trip_ids_to_keep=trip_ids_to_keep)
+        self._process_common_files(
+            service_ids_to_keep=service_ids_to_keep,
+            trip_ids_to_keep=trip_ids_to_keep,
+        )
 
         return self._get_output_files()

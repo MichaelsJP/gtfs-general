@@ -65,7 +65,9 @@ def extract_bbox(
     logger.info("####### Start processing ########")
     keep_bbox: Bbox = Bbox(*coordinates)
     extractor: Extractor = Extractor(
-        input_object=Path(input_object), output_folder=Path(output_folder), cpu_count=ctx.obj.cpu_count
+        input_object=Path(input_object),
+        output_folder=Path(output_folder),
+        cpu_count=ctx.obj.cpu_count,
     )
     files: List = extractor.extract_by_bbox(bbox=keep_bbox)
     extractor.close()
@@ -86,9 +88,13 @@ def extract_date(
     input_object: str = typer.Option(..., help="Directory or zip File from which the GFTS files are read"),
     output_folder: str = typer.Option(..., help="Directory to which the GFTS files are written"),
     start_date: str = typer.Option(
-        ..., help="Lower date boundary. Format: YYYYMMDD. e.g. 20221002 for 2nd October 2022"
+        ...,
+        help="Lower date boundary. Format: YYYYMMDD. e.g. 20221002 for 2nd October 2022",
     ),
-    end_date: str = typer.Option(..., help="Lower date boundary. Format: YYYYMMDD. e.g. 20221002 for 2nd October 2022"),
+    end_date: str = typer.Option(
+        ...,
+        help="Lower date boundary. Format: YYYYMMDD. e.g. 20221002 for 2nd October 2022",
+    ),
 ) -> None:
     logger.info("#################################")
     logger.info("######## Extract by date ########")
@@ -98,10 +104,13 @@ def extract_date(
     logger.info("#################################")
     logger.info("####### Start processing ########")
     extractor: Extractor = Extractor(
-        input_object=Path(input_object), output_folder=Path(output_folder), cpu_count=ctx.obj.cpu_count
+        input_object=Path(input_object),
+        output_folder=Path(output_folder),
+        cpu_count=ctx.obj.cpu_count,
     )
     files: List = extractor.extract_by_date(
-        start_date=datetime.strptime(start_date, "%Y%m%d"), end_date=datetime.strptime(end_date, "%Y%m%d")
+        start_date=datetime.strptime(start_date, "%Y%m%d"),
+        end_date=datetime.strptime(end_date, "%Y%m%d"),
     )
     extractor.close()
     logger.info("################################")
@@ -145,9 +154,19 @@ def server(
     gunicorn: bool = typer.Option(False, help="Use Gunicorn instead of uvicorn."),
 ) -> None:
     if not gunicorn:
-        uvicorn.run("gtfs_general.main:create_app", host=host, port=port, reload=reload, workers=workers)
+        uvicorn.run(
+            "gtfs_general.main:create_app",
+            host=host,
+            port=port,
+            reload=reload,
+            workers=workers,
+        )
     else:
-        options = {"bind": f"{host}:{port}", "workers": workers, "worker_class": "uvicorn.workers.UvicornWorker"}
+        options = {
+            "bind": f"{host}:{port}",
+            "workers": workers,
+            "worker_class": "uvicorn.workers.UvicornWorker",
+        }
         StandaloneApplication(create_app(), options).run()
 
 
@@ -155,7 +174,10 @@ def server(
 def main(
     ctx: typer.Context,
     logging: Optional[str] = "INFO",
-    cores: int = typer.Option(cpu_count - 1 if cpu_count else 1, help="Set the number of cores to use for processing."),
+    cores: int = typer.Option(
+        cpu_count - 1 if cpu_count else 1,
+        help="Set the number of cores to use for processing.",
+    ),
     progress: Optional[bool] = typer.Option(True, help="Deactivate the progress bars."),
     version: Optional[bool] = typer.Option(
         None,
