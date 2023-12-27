@@ -1,5 +1,7 @@
+import contextlib
 import pathlib
 import shutil
+import socket
 import zipfile
 from pathlib import Path
 from typing import Generator
@@ -17,6 +19,15 @@ script_path = pathlib.Path(__file__).parent.resolve()
 def test_client() -> Generator[TestClient, None, None]:
     with TestClient(create_app()) as c:
         yield c
+
+
+# create fixture to return random open port
+@pytest.fixture(scope="function")
+def random_open_port() -> int:
+    with contextlib.closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(("", 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]
 
 
 @pytest.fixture(scope="function")

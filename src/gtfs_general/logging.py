@@ -1,7 +1,36 @@
 import logging
-import sys
+from enum import Enum
 
-from src.gtfs_general import logger
+
+class LoggingLevel(str, Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
+
+    def __new__(cls, *args, **kwargs):  # type: ignore
+        value = args[0]
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        return obj
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return self.value
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, LoggingLevel):
+            return self.value == other.value
+        elif isinstance(other, str):
+            return self.value == other
+        else:
+            return False
+
+    def __hash__(self) -> int:
+        return hash(self.value)
 
 
 class CustomFormatter(logging.Formatter):
@@ -25,19 +54,3 @@ class CustomFormatter(logging.Formatter):
         log_fmt = self.FORMATS.get(record.levelno)
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
-
-
-def initialize_logging(level: str = "info") -> None:
-    correct_level = logging.getLevelName(level)
-    logger.setLevel(correct_level)
-
-    stdout_handler = logging.StreamHandler(sys.stdout)
-    stdout_handler.setLevel(correct_level)
-    stdout_handler.setFormatter(CustomFormatter())
-
-    # file_handler = logging.FileHandler("logs.log")
-    # file_handler.setLevel(correct_level)
-    # file_handler.setFormatter(CustomFormatter())
-
-    # logger.addHandler(file_handler)
-    logger.addHandler(stdout_handler)

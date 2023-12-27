@@ -6,20 +6,21 @@ from dataclasses import dataclass
 from datetime import datetime
 from functools import partialmethod
 from pathlib import Path
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 import typer
 import uvicorn
 from tqdm import tqdm
 
 from . import __app_name__, __version__, logger
-from .application import StandaloneApplication, create_app
+from .application import StandaloneApplication, initialize_logging
+from .config import Settings
 from .dask_config import initialize_dask
 from .docs import app as docs_app
 from .extractor.bbox import Bbox
 from .extractor.extractor import Extractor
 from .extractor.gtfs import GTFS
-from .logging import initialize_logging
+from .logging import LoggingLevel
 
 app = typer.Typer()
 
@@ -43,6 +44,7 @@ def _version_callback(value: bool) -> None:
 @dataclass
 class Shared:
     cpu_count: int
+    settings: Settings
 
 
 @app.command()
@@ -152,8 +154,16 @@ def server(
     reload: bool = typer.Option(False, help="Activate automatic server reload on code changes."),
     workers: int = typer.Option(1, help="Define number of uvicorn workers."),
     gunicorn: bool = typer.Option(False, help="Use Gunicorn instead of uvicorn."),
-) -> None:
+) -> None:  # pragma: no cover
+    logger.info("################################")
+    logger.info("######## Start server ##########")
+    logger.info(f"Host: {host}")
+    logger.info(f"Port: {port}")
     if not gunicorn:
+        logger.info(f"Reload: {reload}")
+        logger.info(f"Workers: {workers}")
+        logger.info("Webserver: uvicorn")
+        logger.info("################################")
         uvicorn.run(
             "gtfs_general.main:create_app",
             host=host,
@@ -162,18 +172,31 @@ def server(
             workers=workers,
         )
     else:
+        logger.info(f"Workers: {workers}")
+        logger.info("Webserver: gunicorn")
+        logger.info("################################")
         options = {
             "bind": f"{host}:{port}",
             "workers": workers,
             "worker_class": "uvicorn.workers.UvicornWorker",
         }
-        StandaloneApplication(create_app(), options).run()
+        StandaloneApplication("gtfs_general.main:create_app", options).run()
+
+
+# Empty app command
+@app.command(name="void", hidden=True)
+def void() -> None:
+    logger.debug("This is a debug message.")
+    logger.info("This is an info message.")
+    logger.warning("This is a warning message.")
+    logger.error("This is an error message.")
+    logger.critical("This is a critical message.")
 
 
 @app.callback()
 def main(
     ctx: typer.Context,
-    logging: Optional[str] = "INFO",
+    logging: Annotated[LoggingLevel, typer.Option(case_sensitive=True)] = LoggingLevel.INFO,
     cores: int = typer.Option(
         cpu_count - 1 if cpu_count else 1,
         help="Set the number of cores to use for processing.",
@@ -190,12 +213,11 @@ def main(
 ) -> None:
     if not progress:
         tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
-    if logging is None:
-        logging = "INFO"
-    initialize_logging(logging)
+    settings = Settings(logging_level=logging)
+    initialize_logging(settings)
     initialize_dask()
     logger.info("############ Run info ############")
     logger.info(f"Log level: {logging}")
     logger.info(f"Number of cores: {cores}")
-    ctx.obj = Shared(cpu_count=cores)
+    ctx.obj = Shared(cpu_count=cores, settings=settings)
     return
