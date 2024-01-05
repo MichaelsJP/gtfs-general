@@ -1,0 +1,29 @@
+[package]
+name = "gtfs-general"
+version = "0.1.0"
+edition = "2021"
+authors = ["Julian Psotta <julianpsotta@gmail.com>"]
+
+[lib]
+name = "gtfs_general"
+path = "src/lib.rs"
+crate-type = ["rlib"]
+
+[dependencies]
+clap = { version = "4.4.12", features = ["derive"] }
+#geo = "0.27.0"
+polars = { version = "0.36.2", features = ["lazy", "streaming", "strings", "dtype-date", "timezones"] }
+zip = "0.6.6"
+env_logger = { version = "0.10.1", features = [] }
+log = "0.4.20"
+tempfile = "3.9.0"
+lazy_static = { version = "1.4.0", features = [] }
+serde = { version = "1.0.193", features = ["derive"] }
+
+
+[dev-dependencies]
+rstest = "0.18.2"
+tempdir = "0.3.7"
+grcov = "0.8.19"
+pretty_assertions = "1.4.0"
+cargo-llvm-cov = "0.6.0"
