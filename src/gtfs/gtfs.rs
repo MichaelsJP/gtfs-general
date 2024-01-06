@@ -45,13 +45,15 @@ impl GTFS {
     // Constructor
 
     pub fn new(file_location: PathBuf, working_directory: PathBuf) -> Result<GTFS, Box<dyn Error>> {
-
-        // Append the file name to the working directory without any extension
-        let working_directory = working_directory.join(file_location.file_stem().unwrap_or_default());
-
-        let gtfs = GTFS { file_location, working_directory: working_directory.clone() };
+        let mut gtfs = GTFS { file_location: file_location.clone(), working_directory: PathBuf::from("") };
         // Check if the GTFS file is valid
         gtfs.is_valid()?;
+
+        if file_location.is_file() {
+            gtfs.working_directory = working_directory.clone().join(file_location.file_stem().unwrap());
+        } else {
+            gtfs.working_directory = working_directory.clone();
+        }
 
         // If th working directory does not exist, create it
         if !working_directory.exists() {

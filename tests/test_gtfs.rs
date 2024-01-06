@@ -61,7 +61,7 @@ mod tests {
 
         // Check temp_location is not the same as the gtfs_zip_path but an existing folder
         assert_ne!(gtfs.working_directory, gtfs_zip_path);
-        assert_eq!(gtfs.working_directory, non_existent_subfolder.clone());
+        assert_eq!(gtfs.working_directory, non_existent_subfolder.clone().join("ic_ice_gtfs_germany"));
 
         // Act
         let result = gtfs.get_filenames();
@@ -145,7 +145,7 @@ mod tests {
         // Assert
         assert!(non_existent_subfolder.is_dir());
         assert!(temp_working_directory.path().is_dir());
-        assert_eq!(gtfs.working_directory, non_existent_subfolder);
+        assert_eq!(gtfs.working_directory, non_existent_subfolder.join("ic_ice_gtfs_germany"));
     }
 
     #[test]
