@@ -56,7 +56,6 @@ jobs:
       - name: Install poetry
         run: |
           pipx install poetry
-      - uses: actions/setup-python@v5
       - name: Set up testing Python ${{ matrix.config.python-version }}
         uses: actions/setup-python@v4
         with:
