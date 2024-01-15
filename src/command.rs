@@ -43,6 +43,18 @@ pub enum Command {
         #[arg(short, long, num_args = 4, value_names = & ["minx", "miny", "maxx", "maxy"])]
         bbox: Vec<f64>,
     },
+    ExtractDate {
+        /// Define the date to extract the data from with format: YYYY-MM-DD
+        #[arg(short, long, value_name = "start_date")]
+        start_date: String,
+        /// Define the date to extract the data to with format: YYYY-MM-DD
+        #[arg(short, long, value_name = "end_date")]
+        end_date: String,
+
+        /// Folder to write the output to
+        #[arg(short, long, default_value = "./output")]
+        output_folder: PathBuf,
+    },
     // Hide the not implemented command
     #[command(hide = true)]
     NotImplemented {},
@@ -93,9 +105,7 @@ impl App {
             Metadata {} => {
                 info!("{} {} {}", "#".repeat(2), "Metadata".to_string(), "#".repeat(2));
                 // Create a new GTFS object
-                let gtfs = GTFS::new(self.global_opts.input_data.clone(), self.global_opts.working_directory.clone());
-                assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
-                let gtfs = gtfs.unwrap();
+                let gtfs = GTFS::new(self.global_opts.input_data.clone(), self.global_opts.working_directory.clone())?;
 
                 // Get the metadata
                 let metadata = gtfs.get_metadata()?;
@@ -103,6 +113,16 @@ impl App {
                 info!("Service Range: {:?}", metadata.service_range);
                 // Print Metadata End
                 info!("{} {} {}", "#".repeat(2), "Metadata End".to_string(), "#".repeat(2));
+            }
+            Command::ExtractDate {
+                start_date,
+                end_date,
+                output_folder
+            } => {
+                info!("{} {} {}", "#".repeat(2), "Extract Date".to_string(), "#".repeat(2));
+                // Create a new GTFS object
+                let gtfs = GTFS::new(self.global_opts.input_data.clone(), self.global_opts.working_directory.clone())?;
+                gtfs.filter_calendar_by_date(output_folder, start_date, end_date)?;
             }
             _ => {
                 error!("Command not implemented yet");
