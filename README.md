@@ -21,9 +21,16 @@ A general to command your GTFS data.
 
 ## Install
 ```bash
-# Create a virtual environment
+# Create venv
+python -m venv venv
+# Activate venv
+source venv/bin/activate
+# Install the packages
 poetry install
-python -m gtfs-general --help
+# Run with poetry
+poetry run gtfs-general --help
+# Run through python and mind the _
+python -m gtfs_general --help
 ```
 
 ## CLI
@@ -135,18 +142,18 @@ $ gtfs-general metadata [OPTIONS]
 
 Ask for help
 ```bash
-python -m gtfs-general --help
+poetry run gtfs-general --help
 ```
 
 Show metadata (for now just service days)
 ```bash
-python -m gtfs_general metadata --input-object [zip/folder]
+poetry run gtfs-general metadata --input-object [zip/folder]
 ```
 
 Cut by bounding box
 ```bash
 # Bounding box with WGS84 4326 Coordinates lon/lat (lon min, lat min, lon max, lat max):
-python -m gtfs-general extract-bbox --input-object [zip/folder] --output-folder output --bbox "8.573179,49.352031,8.794049,49.459693"
+poetry run gtfs-general extract-bbox --input-object [zip/folder] --output-folder output --bbox "8.573179,49.352031,8.794049,49.459693"
 ```
 
 Cut by date
