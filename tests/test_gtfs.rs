@@ -277,4 +277,25 @@ mod tests {
         assert_eq!(service_range.latest_start_date, "2022-10-08");
         assert_eq!(service_range.end_date, "2022-10-09");
     }
+
+    #[test]
+    fn test_filter_calendar_by_date() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+
+        // Act
+        let result = gtfs.filter_calendar_by_date(&temp_working_directory.path().to_path_buf().clone(), "2022-10-03", "2022-10-0");
+
+        // Assert
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+        let result = result.unwrap();
+        // assert_eq!(result.len(), 2);
+        // assert!(result.contains(&String::from("calendar.txt")));
+        // assert!(result.contains(&String::from("calendar_dates.txt")));
+    }
 }

@@ -6,6 +6,7 @@ use crate::common::unzip_module::unzip_file;
 use ::zip::ZipArchive;
 use polars::prelude::*;
 use std::fmt;
+use polars::export::chrono::NaiveDate;
 
 pub struct ServiceRange {
     pub start_date: String,
@@ -215,5 +216,44 @@ impl GTFS {
     pub(crate) fn get_metadata(&self) -> Result<Metadata, Box<dyn Error>> {
         let service_range = self.service_date_range()?;
         Ok(Metadata { service_range })
+    }
+
+    pub fn filter_calendar_by_date(&self, output_folder: &PathBuf, start_date: &str, end_date: &str) -> Result<(), Box<dyn Error>> {
+        let calendar_file = self.get_file("calendar.txt");
+        if calendar_file.is_err() {
+            return Err(format!("Error reading calendar file: {}", calendar_file.unwrap_err()))?;
+        }
+        // Cast start_date to a date object
+        let start_date_converted = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")?;
+        let end_date_converted = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")?;
+        let start_date_format = col("start_date")
+            .cast(DataType::String)
+            .str()
+            .to_date(
+                StrptimeOptions {
+                    format: Some("%Y%m%d".to_string()),
+                    ..Default::default()
+                }
+            ).dt().date();
+        // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
+        let lf = LazyCsvReader::new(calendar_file?)
+            .has_header(true)
+            // .low_memory(true)
+            .finish()?
+            // Select and cast the start date and keep the rest of the columns
+            .select(&[start_date_format.clone()])
+            .filter(
+                col("start_date")
+                    .gt_eq(lit(start_date_converted))
+                    .and(col("start_date").lt_eq(lit(end_date_converted)))
+            )
+            .with_streaming(true);
+
+        let df = lf.collect()?;
+        // print the height
+        println!("Height: {}", df.height());
+        // print the first 5 rows
+        println!("{:?}", df.head(Some(5)));
+        Ok(())
     }
 }
