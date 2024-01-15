@@ -11,19 +11,21 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v3
+      - name: Install poetry
+        run: |
+          pipx install poetry
       - name: Set up testing Python 3.10
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          cache: 'pip'
+          cache: 'poetry'
       - name: Install dependencies
-        run: |
-          pip install --upgrade pip tox poetry
+        run: poetry install
       - name: Load cached tox
         uses: actions/cache@v3
         with:
           path: .tox
-          key: tox-lint-poetry-1.2.2-python-3.10-${{ hashFiles('**/poetry.lock') }}
+          key: tox-lint-poetry-1.7.1-python-3.10-${{ hashFiles('**/poetry.lock') }}
       - name: Load cached pre-commit
         uses: actions/cache@v3
         with:
@@ -31,7 +33,7 @@ jobs:
           key: pre-commit-4|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Run tox lint
         run: |
-          tox -e lint-py310
+          poetry run tox -e lint-py310
   backend-tests:
     needs:
       - lint
@@ -45,7 +47,7 @@ jobs:
             tox: py310
           - python-version: '3.11'
             tox: py311
-        poetry-version: [ 1.5.1 ]
+        poetry-version: [ 1.7.1 ]
         os: [ ubuntu-22.04 ]
     runs-on: ${{ matrix.os }}
     steps:
