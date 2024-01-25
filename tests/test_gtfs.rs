@@ -302,4 +302,30 @@ mod tests {
         assert!(file_content.contains("monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,service_id"));
         assert!(file_content.contains("1,0,0,0,0,0,1,20221002,20221003,46"));
     }
+
+    #[test]
+    fn test_filter_calendar_dates_by_date() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+
+        // Act
+        let result = gtfs.filter_calendar_dates_by_date(&temp_working_directory.path().to_path_buf().clone(), "2022-10-02", "2022-10-03");
+
+        // Assert
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+        let result = result.unwrap();
+        // Check if the file exists
+        assert!(result.is_file());
+
+        let file_content = fs::read_to_string(result).expect("Failed to read file");
+        // Check that the file contains the expected lines
+        assert!(file_content.contains("service_id,exception_type,date"));
+        assert!(file_content.contains("55,1,20221003"));
+        assert!(file_content.contains("57,1,20221002"));
+    }
 }
