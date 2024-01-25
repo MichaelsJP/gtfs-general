@@ -289,13 +289,17 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Act
-        let result = gtfs.filter_calendar_by_date(&temp_working_directory.path().to_path_buf().clone(), "2022-10-03", "2022-10-0");
+        let result = gtfs.filter_calendar_by_date(&temp_working_directory.path().to_path_buf().clone(), "2022-10-02", "2022-10-03");
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
         let result = result.unwrap();
-        // assert_eq!(result.len(), 2);
-        // assert!(result.contains(&String::from("calendar.txt")));
-        // assert!(result.contains(&String::from("calendar_dates.txt")));
+        // Check if the file exists
+        assert!(result.is_file());
+
+        let file_content = fs::read_to_string(result).expect("Failed to read file");
+        // Check that the file contains the expected lines
+        assert!(file_content.contains("monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,service_id"));
+        assert!(file_content.contains("1,0,0,0,0,0,1,20221002,20221003,46"));
     }
 }
