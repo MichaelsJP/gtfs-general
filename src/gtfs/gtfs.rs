@@ -317,4 +317,18 @@ impl GTFS {
             .sink_csv(output_file.clone(), csv_writer_options)?;
         Ok(output_file)
     }
+    // Write function to get a column from a csv file and format it to a definable type
+    pub fn get_column(&self, file_name: &str, column_name: &str, data_type: DataType) -> Result<Series, Box<dyn Error>> {
+        // Get file
+        let file = self.get_file(file_name)?;
+        // Create a lazy csv reader
+        let lf = LazyCsvReader::new(file)
+            .low_memory(true)
+            .has_header(true)
+            .finish()?;
+        // Get column
+        let df = lf.select(&[col(column_name).cast(data_type)]).collect()?;
+        // Return column
+        Ok(df.column(column_name).unwrap().clone())
+    }
 }
