@@ -270,4 +270,51 @@ impl GTFS {
             .sink_csv(output_file.clone(), csv_writer_options)?;
         Ok(output_file)
     }
+
+    pub fn filter_calendar_dates_by_date(&self, output_folder: &PathBuf, start_date: &str, end_date: &str) -> Result<PathBuf, Box<dyn Error>> {
+        let calendar_dates_file = self.get_file("calendar_dates.txt")?;
+        let output_file = output_folder.join("calendar_dates.txt");
+
+        // Cast start_date to a date object
+        let start_date_converted = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")?;
+        let end_date_converted = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")?;
+        let strptime_options = StrptimeOptions {
+            format: Some("%Y%m%d".to_string()),
+            ..Default::default()
+        };
+        let date_format = col("date")
+            .cast(DataType::String)
+            .str()
+            .to_date(strptime_options.clone())
+            .dt()
+            .date();
+        let serialize_options = SerializeOptions {
+            date_format: Some("%Y%m%d".to_string()),
+            ..Default::default()
+        };
+        let csv_writer_options = CsvWriterOptions {
+            include_bom: false,
+            include_header: true,
+            batch_size: 10000,
+            maintain_order: true,
+            serialize_options,
+        };
+
+        // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
+        LazyCsvReader::new(calendar_dates_file)
+            .has_header(true)
+            .low_memory(true)
+            .finish()?
+            // Select all and cast the start date and end date to a date object
+            .select(&[all()])
+            .with_columns(vec![date_format.clone()])
+            .filter(
+                col("date")
+                    .gt_eq(lit(start_date_converted))
+                    .and(col("date").lt_eq(lit(end_date_converted)))
+            )
+            .with_streaming(true)
+            .sink_csv(output_file.clone(), csv_writer_options)?;
+        Ok(output_file)
+    }
 }
