@@ -218,9 +218,16 @@ impl GTFS {
         Ok(Metadata { service_range })
     }
 
-    pub fn filter_calendar_by_date(&self, output_folder: &PathBuf, start_date: &str, end_date: &str) -> Result<PathBuf, Box<dyn Error>> {
-        let calendar_file = self.get_file("calendar.txt")?;
-        let output_file = output_folder.join("calendar.txt");
+    pub fn filter_file_by_dates(&self,
+        file_name: &str,
+        output_folder: &PathBuf,
+        start_date: &str,
+        end_date: &str,
+        start_date_column: &str,
+        end_date_column: &str,
+    ) -> Result<PathBuf, Box<dyn Error>> {
+        let calendar_file = self.get_file(file_name)?;
+        let output_file = output_folder.join(file_name);
 
         // Cast start_date to a date object
         let start_date_converted = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")?;
@@ -229,18 +236,26 @@ impl GTFS {
             format: Some("%Y%m%d".to_string()),
             ..Default::default()
         };
-        let start_date_format = col("start_date")
+        let start_date_format = col(start_date_column)
             .cast(DataType::String)
             .str()
             .to_date(strptime_options.clone())
             .dt()
             .date();
-        let end_date_format = col("end_date")
-            .cast(DataType::String)
-            .str()
-            .to_date(strptime_options.clone())
-            .dt()
-            .date();
+        let end_date_format: Expr;
+        let date_format_vector: Vec<Expr>;
+        if start_date_column != end_date_column {
+            end_date_format = col(end_date_column)
+                .cast(DataType::String)
+                .str()
+                .to_date(strptime_options.clone())
+                .dt()
+                .date();
+            date_format_vector = vec![start_date_format.clone(), end_date_format.clone()];
+        } else {
+            // Only one format expression, else the filter will fail
+            date_format_vector = vec![start_date_format.clone()];
+        }
         let serialize_options = SerializeOptions {
             date_format: Some("%Y%m%d".to_string()),
             ..Default::default()
@@ -260,63 +275,17 @@ impl GTFS {
             .finish()?
             // Select all and cast the start date and end date to a date object
             .select(&[all()])
-            .with_columns(vec![start_date_format.clone(), end_date_format.clone()])
+            .with_columns(date_format_vector)
             .filter(
-                col("start_date")
+                col(start_date_column)
                     .gt_eq(lit(start_date_converted))
-                    .and(col("end_date").lt_eq(lit(end_date_converted)))
+                    .and(col(end_date_column).lt_eq(lit(end_date_converted)))
             )
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options)?;
         Ok(output_file)
     }
 
-    pub fn filter_calendar_dates_by_date(&self, output_folder: &PathBuf, start_date: &str, end_date: &str) -> Result<PathBuf, Box<dyn Error>> {
-        let calendar_dates_file = self.get_file("calendar_dates.txt")?;
-        let output_file = output_folder.join("calendar_dates.txt");
-
-        // Cast start_date to a date object
-        let start_date_converted = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")?;
-        let end_date_converted = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")?;
-        let strptime_options = StrptimeOptions {
-            format: Some("%Y%m%d".to_string()),
-            ..Default::default()
-        };
-        let date_format = col("date")
-            .cast(DataType::String)
-            .str()
-            .to_date(strptime_options.clone())
-            .dt()
-            .date();
-        let serialize_options = SerializeOptions {
-            date_format: Some("%Y%m%d".to_string()),
-            ..Default::default()
-        };
-        let csv_writer_options = CsvWriterOptions {
-            include_bom: false,
-            include_header: true,
-            batch_size: 10000,
-            maintain_order: true,
-            serialize_options,
-        };
-
-        // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
-        LazyCsvReader::new(calendar_dates_file)
-            .has_header(true)
-            .low_memory(true)
-            .finish()?
-            // Select all and cast the start date and end date to a date object
-            .select(&[all()])
-            .with_columns(vec![date_format.clone()])
-            .filter(
-                col("date")
-                    .gt_eq(lit(start_date_converted))
-                    .and(col("date").lt_eq(lit(end_date_converted)))
-            )
-            .with_streaming(true)
-            .sink_csv(output_file.clone(), csv_writer_options)?;
-        Ok(output_file)
-    }
     // Write function to get a column from a csv file and format it to a definable type
     pub fn get_column(&self, file_name: &str, column_name: &str, data_type: DataType) -> Result<Series, Box<dyn Error>> {
         // Get file
@@ -332,10 +301,10 @@ impl GTFS {
         Ok(df.column(column_name).unwrap().clone())
     }
 
-    pub fn filter_trips_by_service_ids(&self, output_folder: &PathBuf, service_ids: Series) -> Result<PathBuf, Box<dyn Error>> {
-        let trips_file = self.get_file("trips.txt")?;
-        let output_file = output_folder.join("trips.txt");
-        let allowed = service_ids.cast(&DataType::Int64).unwrap();
+    pub fn filter_file_by_values(&self, file_name: &str, output_folder: &PathBuf, column_name: &str, allowed_values: Series) -> Result<PathBuf, Box<dyn Error>> {
+        let file = self.get_file(file_name)?;
+        let output_file = output_folder.join(file_name);
+        let allowed = allowed_values.cast(&DataType::Int64).unwrap();
         let csv_writer_options = CsvWriterOptions {
             include_bom: false,
             include_header: true,
@@ -344,10 +313,10 @@ impl GTFS {
             ..Default::default()
         };
 
-        LazyCsvReader::new(trips_file)
+        LazyCsvReader::new(file)
             .has_header(true)
             .finish()?
-            .filter(col("service_id").is_in(lit(allowed.clone())))
+            .filter(col(column_name).is_in(lit(allowed.clone())))
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options)?;
         // Return path
