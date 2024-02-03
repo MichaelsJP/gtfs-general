@@ -3,8 +3,8 @@ mod tests {
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
-    use polars::prelude::{DataType, last};
     use polars::prelude::DataType::Int32;
+    use polars::series::Series;
     use tempfile::{tempdir};
     use gtfs_general::gtfs::gtfs::{GTFS, ServiceRange};
     use pretty_assertions::{assert_eq, assert_ne};
@@ -351,5 +351,31 @@ mod tests {
         assert_eq!(result.get(0).unwrap().to_string(), "68");
         assert_eq!(result.get(1).unwrap().to_string(), "76");
         assert_eq!(result.iter().last().unwrap().to_string(), "86");
+    }
+
+    #[test]
+    fn test_filter_trips_by_service_ids() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+
+        // Act
+        let allowed: Series = [68,76].iter().collect();
+        let result = gtfs.filter_trips_by_service_ids(&temp_working_directory.path().to_path_buf().clone(), allowed);
+
+        // Assert
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+        let result = result.unwrap();
+        // Check if the file exists
+        assert!(result.is_file());
+
+        let file_content = fs::read_to_string(result).expect("Failed to read file");
+        assert!(file_content.contains("route_id,service_id,direction_id,trip_id,shape_id"));
+        assert!(file_content.contains("2,76,0,2564,"));
+        assert!(file_content.contains("29,68,0,1980,"));
     }
 }

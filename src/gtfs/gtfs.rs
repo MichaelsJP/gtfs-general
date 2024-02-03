@@ -331,4 +331,26 @@ impl GTFS {
         // Return column
         Ok(df.column(column_name).unwrap().clone())
     }
+
+    pub fn filter_trips_by_service_ids(&self, output_folder: &PathBuf, service_ids: Series) -> Result<PathBuf, Box<dyn Error>> {
+        let trips_file = self.get_file("trips.txt")?;
+        let output_file = output_folder.join("trips.txt");
+        let allowed = service_ids.cast(&DataType::Int64).unwrap();
+        let csv_writer_options = CsvWriterOptions {
+            include_bom: false,
+            include_header: true,
+            batch_size: 10000,
+            maintain_order: true,
+            ..Default::default()
+        };
+
+        LazyCsvReader::new(trips_file)
+            .has_header(true)
+            .finish()?
+            .filter(col("service_id").is_in(lit(allowed.clone())))
+            .with_streaming(true)
+            .sink_csv(output_file.clone(), csv_writer_options)?;
+        // Return path
+        Ok(output_file)
+    }
 }

@@ -11,8 +11,7 @@ crate-type = ["rlib"]
 
 [dependencies]
 clap = { version = "4.4.12", features = ["derive"] }
-#geo = "0.27.0"
-polars = { version = "0.36.2", features = ["lazy", "streaming", "strings", "dtype-date", "timezones", "csv"] }
+polars = { version = "0.36.2", features = ["lazy", "streaming", "strings", "dtype-date", "timezones", "csv", "is_in"] }
 zip = "0.6.6"
 env_logger = { version = "0.10.1", features = [] }
 log = "0.4.20"
