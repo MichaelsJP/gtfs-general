@@ -407,7 +407,8 @@ mod tests {
 
         // Act
         let allowed: Series = [68, 76].iter().collect();
-        let result = gtfs.filter_file_by_values("trips.txt", &temp_working_directory.path().to_path_buf(), "service_id", allowed);
+        let trips_file = gtfs.get_file("trips.txt").expect("Failed to get file");
+        let result = gtfs.filter_file_by_values(&trips_file, &temp_working_directory.path().to_path_buf(), "service_id", &allowed);
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);

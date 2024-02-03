@@ -312,9 +312,8 @@ impl GTFS {
         Ok(df)
     }
 
-    pub fn filter_file_by_values(&self, file_name: &str, output_folder: &PathBuf, column_name: &str, allowed_values: Series) -> Result<PathBuf, Box<dyn Error>> {
-        let file = self.get_file(file_name)?;
-        let output_file = output_folder.join(file_name);
+    pub fn filter_file_by_values(&self, file: &PathBuf, output_folder: &PathBuf, column_name: &str, allowed_values: &Series) -> Result<PathBuf, Box<dyn Error>> {
+        let output_file = output_folder.join(file.file_name().unwrap());
         let allowed = allowed_values.cast(&DataType::Int64).unwrap();
         let csv_writer_options = CsvWriterOptions {
             include_bom: false,
