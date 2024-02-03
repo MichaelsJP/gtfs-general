@@ -219,12 +219,12 @@ impl GTFS {
     }
 
     pub fn filter_file_by_dates(&self,
-        file_name: &str,
-        output_folder: &PathBuf,
-        start_date: &str,
-        end_date: &str,
-        start_date_column: &str,
-        end_date_column: &str,
+                                file_name: &str,
+                                output_folder: &PathBuf,
+                                start_date: &str,
+                                end_date: &str,
+                                start_date_column: &str,
+                                end_date_column: &str,
     ) -> Result<PathBuf, Box<dyn Error>> {
         let calendar_file = self.get_file(file_name)?;
         let output_file = output_folder.join(file_name);
@@ -287,18 +287,29 @@ impl GTFS {
     }
 
     // Write function to get a column from a csv file and format it to a definable type
-    pub fn get_column(&self, file_name: &str, column_name: &str, data_type: DataType) -> Result<Series, Box<dyn Error>> {
-        // Get file
-        let file = self.get_file(file_name)?;
-        // Create a lazy csv reader
-        let lf = LazyCsvReader::new(file)
-            .low_memory(true)
-            .has_header(true)
-            .finish()?;
-        // Get column
-        let df = lf.select(&[col(column_name).cast(data_type)]).collect()?;
+    pub fn get_column(&self, file_path: PathBuf, column_name: &str, data_type: DataType) -> Result<Series, Box<dyn Error>> {
+        // Calls get_column with the file_name and column_name and data_type
+        let df = self.get_columns(file_path, vec![column_name], vec![data_type])?;
         // Return column
         Ok(df.column(column_name).unwrap().clone())
+    }
+
+    pub fn get_columns(&self, file_path: PathBuf, column_names: Vec<&str>, data_types: Vec<DataType>) -> Result<DataFrame, Box<dyn Error>> {
+        let mut columns = Vec::new();
+        // Iterate through the column names and data types and create a vector of expressions and add it to columns
+        for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
+            columns.push(col(column_name).cast(data_type.clone()));
+        }
+        // Create a lazy csv reader
+        let df = LazyCsvReader::new(file_path)
+            .low_memory(true)
+            .has_header(true)
+            .finish()?
+            .select(columns)
+            .with_streaming(true)
+            .collect()?;
+        // Return column
+        Ok(df)
     }
 
     pub fn filter_file_by_values(&self, file_name: &str, output_folder: &PathBuf, column_name: &str, allowed_values: Series) -> Result<PathBuf, Box<dyn Error>> {

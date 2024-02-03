@@ -354,7 +354,8 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Act
-        let result = gtfs.get_column("calendar.txt", "service_id", Int32);
+        let calendar_file = gtfs.get_file("calendar.txt").expect("Failed to get file");
+        let result = gtfs.get_column(calendar_file, "service_id", Int32);
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
@@ -363,6 +364,33 @@ mod tests {
         assert_eq!(result.get(0).unwrap().to_string(), "68");
         assert_eq!(result.get(1).unwrap().to_string(), "76");
         assert_eq!(result.iter().last().unwrap().to_string(), "86");
+    }
+
+    #[test]
+    fn test_get_columns() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+
+        // Act
+        let calendar_file = gtfs.get_file("calendar.txt").expect("Failed to get file");
+        let result = gtfs.get_columns(calendar_file, vec!["service_id", "start_date"], vec![Int32, Int32]);
+
+        // Assert
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+        let result = result.unwrap();
+        assert_eq!(result[0].len(), 84);
+        assert_eq!(result[1].len(), 84);
+        assert_eq!(result[0].get(0).unwrap().to_string(), "68");
+        assert_eq!(result[0].get(1).unwrap().to_string(), "76");
+        assert_eq!(result[0].iter().last().unwrap().to_string(), "86");
+        assert_eq!(result[1].get(0).unwrap().to_string(), "20221002");
+        assert_eq!(result[1].get(1).unwrap().to_string(), "20221002");
+        assert_eq!(result[1].iter().last().unwrap().to_string(), "20221003");
     }
 
     #[test]
