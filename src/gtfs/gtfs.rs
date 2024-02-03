@@ -219,15 +219,15 @@ impl GTFS {
     }
 
     pub fn filter_file_by_dates(&self,
-                                file_name: &str,
+                                file_name: &PathBuf,
                                 output_folder: &PathBuf,
                                 start_date: &str,
                                 end_date: &str,
                                 start_date_column: &str,
                                 end_date_column: &str,
     ) -> Result<PathBuf, Box<dyn Error>> {
-        let calendar_file = self.get_file(file_name)?;
-        let output_file = output_folder.join(file_name);
+        // Get the file name and add it to the output folder
+        let output_file = output_folder.join(file_name.file_name().unwrap());
 
         // Cast start_date to a date object
         let start_date_converted = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")?;
@@ -269,7 +269,7 @@ impl GTFS {
         };
 
         // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
-        LazyCsvReader::new(calendar_file)
+        LazyCsvReader::new(file_name)
             .has_header(true)
             .low_memory(true)
             .finish()?
