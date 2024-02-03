@@ -290,8 +290,9 @@ mod tests {
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
         // Act
+        let calendar_file = gtfs.get_file("calendar.txt").expect("Failed to get file");
         let result = gtfs.filter_file_by_dates(
-            "calendar.txt",
+            &calendar_file,
             &temp_working_directory.path().to_path_buf().clone(),
             "2022-10-02",
             "2022-10-03",
@@ -322,8 +323,9 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Act
+        let calendar_dates_file = gtfs.get_file("calendar_dates.txt").expect("Failed to get file");
         let result = gtfs.filter_file_by_dates(
-            "calendar_dates.txt",
+            &calendar_dates_file,
             &temp_working_directory.path().to_path_buf().clone(),
             "2022-10-02",
             "2022-10-03",
