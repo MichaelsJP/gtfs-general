@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::path::{PathBuf};
 use std::fs;
-use log::{debug, error};
+use log::{debug, error, info};
 use crate::common::unzip_module::unzip_file;
 use ::zip::ZipArchive;
 use polars::prelude::*;
@@ -312,9 +312,22 @@ impl GTFS {
         Ok(df)
     }
 
-    pub fn filter_file_by_values(&self, file: &PathBuf, output_folder: &PathBuf, column_name: &str, allowed_values: &Series) -> Result<PathBuf, Box<dyn Error>> {
+    pub fn filter_file_by_values(&self, file: &PathBuf, output_folder: &PathBuf, column_names: Vec<&str>, data_types: Vec<DataType>, allowed_values: &Series) -> Result<PathBuf, Box<dyn Error>> {
         let output_file = output_folder.join(file.file_name().unwrap());
         let allowed = allowed_values.cast(&DataType::Int64).unwrap();
+        let mut columns = Vec::new();
+        let mut filter: Expr = Default::default();
+
+        // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
+        for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
+            let column = col(column_name).cast(data_type.clone());
+            columns.push(column.clone());
+            if column_name != &column_names[0] {
+                filter = filter.and(column.is_in(lit(allowed.clone())));
+            } else {
+                filter = column.is_in(lit(allowed.clone()));
+            };
+        }
         let csv_writer_options = CsvWriterOptions {
             include_bom: false,
             include_header: true,
@@ -326,10 +339,44 @@ impl GTFS {
         LazyCsvReader::new(file)
             .has_header(true)
             .finish()?
-            .filter(col(column_name).is_in(lit(allowed.clone())))
+            .with_columns(columns)
+            .filter(filter)
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options)?;
         // Return path
         Ok(output_file)
+    }
+
+    pub fn process_common_files(&self,
+                                calendar_dates_file: &PathBuf,
+                                calendar_file: &PathBuf,
+                                frequencies_file: &PathBuf,
+                                stop_times_file: &PathBuf,
+                                stops_file: &PathBuf,
+                                transfers_file: &PathBuf,
+                                feed_info_file: &PathBuf,
+                                output_folder: &PathBuf,
+                                service_ids_to_keep: &Series,
+                                trip_ids_to_keep: &Series,
+                                stop_ids_to_keep: &Series,
+    ) -> Result<(), Box<dyn Error>> {
+        // Filter frequencies file by service_ids_to_keep
+        if frequencies_file.exists() {
+            // Frequencies is an optional file
+            self.filter_file_by_values(frequencies_file, output_folder, vec!["trip_id"], vec![DataType::Int64], trip_ids_to_keep)?;
+        } else {
+            info!("Frequencies file not found, skipping");
+        }
+
+        // Filter stops file by stop_ids_to_keep
+        self.filter_file_by_values(stops_file, output_folder, vec!["stop_id"], vec![DataType::Int64], stop_ids_to_keep)?;
+
+        // Filter transfers file by stop_ids_to_keep the file is optional
+        if transfers_file.exists() {
+            self.filter_file_by_values(transfers_file, output_folder, vec!["from_stop_id", "to_stop_id"], vec![DataType::Int64, DataType::Int64], stop_ids_to_keep)?;
+        } else {
+            info!("Transfers file not found, skipping");
+        }
+        Ok(())
     }
 }
