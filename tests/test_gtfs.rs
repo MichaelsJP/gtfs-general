@@ -281,7 +281,7 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_calendar_by_date() {
+    fn test_filter_file_by_different_date_columns() {
         // Arrange
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
@@ -289,9 +289,15 @@ mod tests {
         let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
-
         // Act
-        let result = gtfs.filter_calendar_by_date(&temp_working_directory.path().to_path_buf().clone(), "2022-10-02", "2022-10-03");
+        let result = gtfs.filter_file_by_dates(
+            "calendar.txt",
+            &temp_working_directory.path().to_path_buf().clone(),
+            "2022-10-02",
+            "2022-10-03",
+            "start_date",
+            "end_date",
+        );
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
@@ -306,7 +312,7 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_calendar_dates_by_date() {
+    fn test_filter_file_by_one_date_column() {
         // Arrange
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
@@ -316,8 +322,14 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Act
-        let result = gtfs.filter_calendar_dates_by_date(&temp_working_directory.path().to_path_buf().clone(), "2022-10-02", "2022-10-03");
-
+        let result = gtfs.filter_file_by_dates(
+            "calendar_dates.txt",
+            &temp_working_directory.path().to_path_buf().clone(),
+            "2022-10-02",
+            "2022-10-03",
+            "date",
+            "date",
+        );
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
         let result = result.unwrap();
@@ -354,7 +366,7 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_trips_by_service_ids() {
+    fn test_filter_file_by_values() {
         // Arrange
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
@@ -364,8 +376,8 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Act
-        let allowed: Series = [68,76].iter().collect();
-        let result = gtfs.filter_trips_by_service_ids(&temp_working_directory.path().to_path_buf().clone(), allowed);
+        let allowed: Series = [68, 76].iter().collect();
+        let result = gtfs.filter_file_by_values("trips.txt", &temp_working_directory.path().to_path_buf(), "service_id", allowed);
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
