@@ -10,9 +10,9 @@ from typing import Any, Dict, Tuple
 import numpy as np
 from dask import dataframe as ddf
 
-from src.gtfs_general import logger
-from src.gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
-from src.gtfs_general.extractor.utils import parse_date_from_str
+from gtfs_general import logger
+from gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
+from gtfs_general.extractor.utils import parse_date_from_str
 
 
 class GtfsDtypes:

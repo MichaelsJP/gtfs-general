@@ -10,8 +10,8 @@ packages = [{include = "gtfs_general", from = "src"}]
 gtfs-general = "gtfs_general.main:app"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
-dask = { extras = ['distributed'], version = "^2022.9.2" }
+python = ">=3.9,<3.13"
+dask = { extras = ['distributed'], version = "^2024.4.2" }
 pandas = "^1.5.0"
 typer = {extras = ["all"], version = "^0.6.1"}
 rich = "^12.6.0"

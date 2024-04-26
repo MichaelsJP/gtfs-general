@@ -4,8 +4,7 @@ from typing import List
 from _pytest._py.path import LocalPath
 from typer.testing import CliRunner
 
-from gtfs_general import main
-from src.gtfs_general import __app_name__, __version__
+from gtfs_general import __app_name__, __version__, main
 
 runner = CliRunner()
 

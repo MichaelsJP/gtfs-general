@@ -1,7 +1,7 @@
 import logging
 import sys
 
-from src.gtfs_general import logger
+from gtfs_general import logger
 
 
 class CustomFormatter(logging.Formatter):
