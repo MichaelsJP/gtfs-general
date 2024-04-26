@@ -3,7 +3,9 @@ mod tests {
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
+    use polars::frame::DataFrame;
     use polars::prelude::DataType::Int32;
+    use polars::prelude::NamedFrom;
     use polars::series::Series;
     use tempfile::{tempdir};
     use gtfs_general::gtfs::gtfs::{GTFS, ServiceRange};
@@ -438,7 +440,7 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Act
-        let allowed: Series = [9,68].iter().collect();
+        let allowed: Series = [9, 68].iter().collect();
         let trips_file = gtfs.get_file("trips.txt").expect("Failed to get file");
         let result = gtfs.filter_file_by_values(&trips_file, &temp_working_directory.path().to_path_buf(), vec!["service_id", "route_id"], vec![Int32, Int32], &allowed);
 
@@ -456,5 +458,39 @@ mod tests {
         assert!(file_content.contains("9,68,0,114,"));
         assert!(file_content.contains("9,68,0,1855,"));
         assert!(file_content.contains("9,68,0,2539,"));
+    }
+
+    #[test]
+    fn test_process_common_files() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+
+        // Act
+        let allowed: Series = [9, 68].iter().collect();
+        // route_id,service_id,direction_id,trip_id,shape_id
+        // 9,68,0,1136,
+        // 9,68,0,114,
+        // 9,68,0,1855,
+        // 9,68,0,2539,
+        // Create dataframe with the above values
+        let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
+            Series::new("route_id", [9, 9, 9, 9]),
+            Series::new("service_id", [68, 68, 68, 68]),
+            Series::new("direction_id", [0, 0, 0, 0]),
+            Series::new("trip_id", [1136, 114, 1855, 2539]),
+            Series::new("shape_id", ["", "", "", ""]),
+        ]).expect("Failed to create dataframe");
+        let result = gtfs.process_common_files(&temp_working_directory.path().to_path_buf(), &route_trip_shape_ids_to_keep).expect("Failed to process common files");
+
+        // Assert
+        assert_eq!(result.len(), 3);
+        assert!(result[0].is_file());
+        assert!(result[1].is_file());
+        assert!(result[2].is_file());
     }
 }

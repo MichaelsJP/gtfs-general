@@ -27,12 +27,12 @@ fn main() {
     // Output the command line arguments
     info!("Command line arguments: {}", app);
     // Execute the command
-    app.exec().unwrap_or_else(|err| {
-        error!("Error executing command: {}", err);
+    let processed_files = app.exec().unwrap_or_else(|e| {
+        error!("Error executing command: {}", e);
+        vec![]
     });
     info!("{} {} {}", "#".repeat(5), "Statistics".to_string(), "#".repeat(5));
     // Print the execution time
     info!("Execution time: {} seconds", exec_start_time.elapsed().as_secs());
     info!("{} {} {}", "#".repeat(10), "End".to_string(), "#".repeat(10));
 }
-

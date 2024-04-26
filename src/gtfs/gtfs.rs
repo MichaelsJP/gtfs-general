@@ -76,12 +76,32 @@ impl GTFS {
         }
 
         // Create a vector of the required file names and check if they exist
-        let required_files = vec!["agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt", "calendar.txt", "calendar_dates.txt"];
+        let required_files = vec!["agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt"];
         for required_file in required_files {
             if !file_names.contains(&required_file.to_string()) {
                 return Err(format!("Required file does not exist in GTFS data: {:?}", required_file))?;
             }
         }
+
+        // Conditionally required files calendar and calendar_dates
+        // Either calendar or calendar_dates must exist
+        if !file_names.contains(&"calendar.txt".to_string()) && !file_names.contains(&"calendar_dates.txt".to_string()) {
+            return Err(format!("Either calendar.txt or calendar_dates.txt must exist in GTFS data: {:?}", self.file_location))?;
+        }
+        // feed_info becomes required if translations doesn't exist
+        if !file_names.contains(&"translations.txt".to_string()) && !file_names.contains(&"feed_info.txt".to_string()) {
+            return Err(format!("Either feed_info.txt or translations.txt must exist in GTFS data: {:?}", self.file_location))?;
+        }
+Q
+        // Optional files fare_attributes, fare_rules, shapes, frequencies, transfers, pathways, levels, translations, attributions
+        // Inform if optional files are missing
+        let optional_files = vec!["fare_attributes.txt", "fare_rules.txt", "shapes.txt", "frequencies.txt", "transfers.txt", "pathways.txt", "levels.txt", "translations.txt", "attributions.txt"];
+        for optional_file in optional_files {
+            if !file_names.contains(&optional_file.to_string()) {
+                info!("Optional file does not exist in GTFS data: {:?}", optional_file);
+            }
+        }
+
 
         // All valid
         Ok(true)
@@ -348,35 +368,63 @@ impl GTFS {
     }
 
     pub fn process_common_files(&self,
-                                calendar_dates_file: &PathBuf,
-                                calendar_file: &PathBuf,
-                                frequencies_file: &PathBuf,
-                                stop_times_file: &PathBuf,
-                                stops_file: &PathBuf,
-                                transfers_file: &PathBuf,
-                                feed_info_file: &PathBuf,
                                 output_folder: &PathBuf,
-                                service_ids_to_keep: &Series,
-                                trip_ids_to_keep: &Series,
-                                stop_ids_to_keep: &Series,
-    ) -> Result<(), Box<dyn Error>> {
-        // Filter frequencies file by service_ids_to_keep
+                                route_trip_shape_ids_to_keep: &DataFrame,
+    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+        // Required files
+        let routes_file = self.get_file("routes.txt")?;
+        let agency_file = self.get_file("agency.txt")?;
+        let stop_times_file = self.get_file("stop_times.txt")?;
+        let stops_file = self.get_file("stops.txt")?;
+
+        // Optional files
+        let shapes_file = self.get_file("shapes.txt").unwrap_or_default();
+        let frequencies_file = self.get_file("frequencies.txt").unwrap_or_default();
+        let transfers_file = self.get_file("transfers.txt").unwrap_or_default();
+        let feed_info_file = self.get_file("feed_info.txt").unwrap_or_default();
+
+        // Return vector with all file paths
+        let mut file_paths: Vec<PathBuf> = vec![];
+
+        // Filter files
+        let filtered_routes_file = self.filter_file_by_values(&routes_file, output_folder, vec!["route_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("route_id")?)?;
+        file_paths.push(filtered_routes_file.clone());
+        let filtered_shapes_file = self.filter_file_by_values(&shapes_file, output_folder, vec!["shape_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("shape_id")?)?;
+        file_paths.push(filtered_shapes_file);
+        let filtered_stop_times_file = self.filter_file_by_values(&stop_times_file, output_folder, vec!["trip_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("trip_id")?)?;
+        file_paths.push(filtered_stop_times_file.clone());
+
+        let agency_ids_to_keep = self.get_column(filtered_routes_file.clone(), "agency_id", DataType::Int64)?;
+        let filtered_agency_file = self.filter_file_by_values(&agency_file, output_folder, vec!["agency_id"], vec![DataType::Int64], &agency_ids_to_keep)?;
+        file_paths.push(filtered_agency_file);
+
+        // Filter stops file by stop_ids_to_keep
+        let stop_ids_to_keep = self.get_column(filtered_stop_times_file, "stop_id", DataType::Int64)?;
+        let filtered_stops_file = self.filter_file_by_values(&stops_file, output_folder, vec!["stop_id"], vec![DataType::Int64], &stop_ids_to_keep)?;
+        file_paths.push(filtered_stops_file);
+
+        // Filter conditional files
         if frequencies_file.exists() {
             // Frequencies is an optional file
-            self.filter_file_by_values(frequencies_file, output_folder, vec!["trip_id"], vec![DataType::Int64], trip_ids_to_keep)?;
+            self.filter_file_by_values(&frequencies_file, output_folder, vec!["trip_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("trip_id")?)?;
+            file_paths.push(frequencies_file);
         } else {
             info!("Frequencies file not found, skipping");
         }
-
-        // Filter stops file by stop_ids_to_keep
-        self.filter_file_by_values(stops_file, output_folder, vec!["stop_id"], vec![DataType::Int64], stop_ids_to_keep)?;
-
         // Filter transfers file by stop_ids_to_keep the file is optional
         if transfers_file.exists() {
-            self.filter_file_by_values(transfers_file, output_folder, vec!["from_stop_id", "to_stop_id"], vec![DataType::Int64, DataType::Int64], stop_ids_to_keep)?;
+            self.filter_file_by_values(&transfers_file, output_folder, vec!["from_stop_id", "to_stop_id"], vec![DataType::Int64, DataType::Int64], &stop_ids_to_keep)?;
+            file_paths.push(transfers_file);
         } else {
             info!("Transfers file not found, skipping");
         }
-        Ok(())
+        // Copy feed_info file to output folder
+        if feed_info_file.exists() {
+            fs::copy(feed_info_file.clone(), output_folder.join(feed_info_file.file_name().unwrap()))?;
+            file_paths.push(feed_info_file);
+        } else {
+            info!("Feed Info file not found, skipping");
+        }
+        Ok(file_paths)
     }
 }
