@@ -35,7 +35,7 @@ Notes:
 Setup the project and download the test file:
 ```bash
 # Get the project
-git clone git@github.com:MichaelsJP/gtfs-general.git
+git clone https://github.com/MichaelsJP/gtfs-general.git
 cd gtfs-general
 # Make the script executable
 chmod +x docker_run.sh
