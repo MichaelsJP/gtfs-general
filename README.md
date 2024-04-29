@@ -45,7 +45,7 @@ wget https://download.gtfs.de/germany/rv_free/latest.zip -O gtfs-germany-rv-late
 
 Example: Get the service range of the test gtfs file:
 ```bash
-# Get the metadata
+# Get the metadata -> Currently only the date range
 ./docker_run.sh metadata --input-object gtfs-germany-rv-latest.zip
 ```
 
