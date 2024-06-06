@@ -31,7 +31,7 @@ pub struct GlobalOpts {
 
     /// Define a custom working directory or use the default one
     /// The default working directory is named gtfs_general and is located in the current working directory
-    #[arg(long, short, default_value = "./gtfs_general")]
+    #[arg(long, short, default_value = "./")]
     pub working_directory: PathBuf,
 }
 

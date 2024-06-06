@@ -66,8 +66,10 @@ impl GTFS {
             gtfs.working_directory = working_directory
                 .clone()
                 .join(file_location.file_stem().unwrap());
+        } else if file_location.is_dir() {
+            gtfs.working_directory = file_location.clone();
         } else {
-            gtfs.working_directory = working_directory.clone();
+            error!("File is not pointing to an existing file or folder: {:?}", file_location);
         }
 
         // If th working directory does not exist, create it

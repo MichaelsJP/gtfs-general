@@ -7,7 +7,7 @@ macro_rules! vec_of_strings {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use gtfs_general::command::Command::ExtractBbox;
+    use gtfs_general::command::Command::{ExtractBbox, ExtractDate};
     use gtfs_general::command::{App, LogLevel};
     use gtfs_general::common::test_utils::setup_temp_gtfs_data;
     use pretty_assertions::assert_eq;
@@ -32,7 +32,7 @@ mod tests {
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/data"));
         assert_eq!(
             app.global_opts.working_directory,
-            PathBuf::from("./gtfs_general")
+            PathBuf::from("./")
         );
 
         // Test with short option for input-data and without default args
@@ -51,7 +51,7 @@ mod tests {
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/short"));
         assert_eq!(
             app.global_opts.working_directory,
-            PathBuf::from("./gtfs_general")
+            PathBuf::from("./")
         );
     }
 
@@ -150,8 +150,7 @@ mod tests {
         let app = App::parse_from(args);
         // Assert that the subcommand is metadata
         assert_eq!(app.command, gtfs_general::command::Command::Metadata {});
-        let result = app.exec();
-        assert!(result.is_ok());
+        app.exec().expect("Failed to execute metadata command");
     }
 
     #[rstest::rstest(
@@ -173,5 +172,39 @@ mod tests {
                 bbox: expected_bbox
             }
         );
+        // let result = app.exec().expect("Failed to execute extract-bbox command");
+    }
+
+    #[rstest::rstest(
+    args,
+    date,
+    expected_start_date,
+    expected_end_date,
+    case::test1(default_args(), vec_of_strings ! ["extract-date", "--start-date", "2020-01-01", "--end-date", "2020-01-31"], "2020-01-01", "2020-01-31"),
+    )]
+    fn test_subcommand_extract_date(
+        args: Vec<String>,
+        date: Vec<String>,
+        expected_start_date: String,
+        expected_end_date: String,
+    ) {
+        // Arrange
+        let gtfs_zip_path = PathBuf::from("tests/files/ic_ice_gtfs_germany.zip");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        
+        let mut args = args;
+        // replace input-data with gtfs_zip_path
+        args[2] = gtfs_zip_path.to_str().unwrap().to_string();
+        let app = App::parse_from(args);
+        // Assert that the subcommand is extract-date
+        assert_eq!(
+            app.command,
+            ExtractDate {
+                start_date: "2020-01-01".to_string(),
+                end_date: "2020-01-31".to_string(),
+                output_folder: PathBuf::from("output"),
+            }
+        );
+        // let result = app.exec().expect("Failed to execute extract-date command");
     }
 }

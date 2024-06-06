@@ -32,7 +32,7 @@ mod tests {
         // Check file location is the same as the temp_folder_valid
         assert_eq!(gtfs.file_location, temp_folder_valid.path().to_path_buf());
         // Check working directory is the same as the temp_working_directory
-        assert_eq!(gtfs.working_directory, non_existent_subfolder);
+        assert_eq!(gtfs.working_directory, temp_folder_valid.path().to_path_buf());
 
         let result = gtfs.get_filenames();
 
@@ -583,7 +583,63 @@ mod tests {
             }
         }
     }
+    #[test]
+    fn test_empty_file_header() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
 
+        // Create dataframe with the below data
+        // route_id,service_id,direction_id,trip_id,shape_id
+        // 9,68,0,1136,
+        // 9,68,0,114,
+        // 9,68,0,1855,
+        // 9,68,0,2539,
+        let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
+            Series::new("route_id", [9, 9, 9, 9]),
+            Series::new("service_id", [68, 68, 68, 68]),
+            Series::new("direction_id", [0, 0, 0, 0]),
+            Series::new("trip_id", [1136, 114, 1855, 2539]),
+            Series::new("shape_id", ["", "", "", ""]), // this causes an empty shapefile. We want to test for the header.
+        ])
+            .expect("Failed to create dataframe");
+        let result = gtfs
+            .process_common_files(
+                &temp_working_directory.path().to_path_buf(),
+                &route_trip_shape_ids_to_keep,
+            )
+            .expect("Failed to process common files");
+
+        // Check shapes.txt
+        // shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence
+        let shapes_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt")
+            .expect("Failed to find shapes.txt");
+        let file_content = fs::read_to_string(shapes_file).expect("Failed to read file");
+        // Get max line number
+        let max_line_number = file_content.lines().count();
+        for line_number in 0..max_line_number {
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
+            match line_number {
+                0 => assert_eq!(
+                    line,
+                    "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"
+                ),
+                _ => panic!("Unexpected line: {}", line),
+            }
+        }
+    }
     #[test]
     fn test_process_common_files() {
         // Arrange
@@ -608,7 +664,7 @@ mod tests {
             Series::new("service_id", [68, 68, 68, 68]),
             Series::new("direction_id", [0, 0, 0, 0]),
             Series::new("trip_id", [1136, 114, 1855, 2539]),
-            Series::new("shape_id", ["", "", "", ""]),
+            Series::new("shape_id", ["10001", "10001", "", ""]),
         ])
         .expect("Failed to create dataframe");
         let result = gtfs
@@ -754,12 +810,17 @@ mod tests {
                 .lines()
                 .nth(line_number)
                 .expect("Failed to get line");
-            match line_number {
-                0 => assert_eq!(
+            if line_number == 0 {
+                assert_eq!(
                     line,
                     "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"
-                ),
-                _ => panic!("Unexpected line: {}", line),
+                );
+            } else if line_number == 1 {
+                assert_eq!(line, "10001,0,49.445,8.668,0.0");
+            } else if line_number == 2 {
+                assert_eq!(line, "10001,1,49.445,8.668,54.527");
+            } else if line_number == max_line_number - 1 {
+                assert_eq!(line, "10001,4,49.445,8.668,89.914");
             }
         }
         // // check calendar.txt
