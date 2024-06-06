@@ -1,8 +1,7 @@
-use std::time::Instant;
 use clap::Parser;
-use log::{error, info};
 use gtfs_general::command::{App, LogLevel};
-
+use log::{error, info};
+use std::time::Instant;
 
 fn init_logger(log_level: LogLevel) {
     env_logger::builder()
@@ -23,7 +22,12 @@ fn main() {
     let log_level = LogLevel::clone(&app.global_opts.level);
     init_logger(log_level);
     // Print a nice header with multiple # to separate the outputs
-    info!("{} {} {}", "#".repeat(10), "GTFS General".to_string(), "#".repeat(10));
+    info!(
+        "{} {} {}",
+        "#".repeat(10),
+        "GTFS General".to_string(),
+        "#".repeat(10)
+    );
     // Output the command line arguments
     info!("Command line arguments: {}", app);
     // Execute the command
@@ -31,8 +35,21 @@ fn main() {
         error!("Error executing command: {}", e);
         vec![]
     });
-    info!("{} {} {}", "#".repeat(5), "Statistics".to_string(), "#".repeat(5));
+    info!(
+        "{} {} {}",
+        "#".repeat(5),
+        "Statistics".to_string(),
+        "#".repeat(5)
+    );
     // Print the execution time
-    info!("Execution time: {} seconds", exec_start_time.elapsed().as_secs());
-    info!("{} {} {}", "#".repeat(10), "End".to_string(), "#".repeat(10));
+    info!(
+        "Execution time: {} seconds",
+        exec_start_time.elapsed().as_secs()
+    );
+    info!(
+        "{} {} {}",
+        "#".repeat(10),
+        "End".to_string(),
+        "#".repeat(10)
+    );
 }

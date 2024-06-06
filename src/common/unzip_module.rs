@@ -1,9 +1,9 @@
+use log::warn;
 use std::error::Error;
-use zip::read::{ZipArchive, ZipFile};
 use std::fs::{create_dir_all, File};
 use std::io::copy;
 use std::path::{Path, PathBuf};
-use log::{warn};
+use zip::read::{ZipArchive, ZipFile};
 
 pub fn unzip_files(zip_path: PathBuf, extract_to: &Path) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let zip_file = File::open(&zip_path)?;

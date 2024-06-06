@@ -1,13 +1,13 @@
-use std::error::Error;
-use std::path::{PathBuf};
-use std::fs;
-use log::{debug, error, info};
 use crate::common::unzip_module::unzip_file;
 use ::zip::ZipArchive;
-use polars::prelude::*;
-use std::fmt;
-use std::fs::File;
+use log::{debug, error, info};
 use polars::export::chrono::NaiveDate;
+use polars::prelude::*;
+use std::error::Error;
+use std::fmt;
+use std::fs;
+use std::fs::File;
+use std::path::PathBuf;
 
 pub struct ServiceRange {
     pub start_date: String,
@@ -17,7 +17,11 @@ pub struct ServiceRange {
 
 impl fmt::Debug for ServiceRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{ start_date: {}, latest_start_date: {}, end_date: {} }}", self.start_date, self.latest_start_date, self.end_date)
+        write!(
+            f,
+            "{{ start_date: {}, latest_start_date: {}, end_date: {} }}",
+            self.start_date, self.latest_start_date, self.end_date
+        )
     }
 }
 
@@ -39,7 +43,11 @@ pub struct GTFS {
 
 impl fmt::Debug for GTFS {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "GTFS:\nfile_location: {:?}\nworking_directory: {:?}", self.file_location, self.working_directory)
+        write!(
+            f,
+            "GTFS:\nfile_location: {:?}\nworking_directory: {:?}",
+            self.file_location, self.working_directory
+        )
     }
 }
 
@@ -47,12 +55,17 @@ impl GTFS {
     // Constructor
 
     pub fn new(file_location: PathBuf, working_directory: PathBuf) -> Result<GTFS, Box<dyn Error>> {
-        let mut gtfs = GTFS { file_location: file_location.clone(), working_directory: PathBuf::from("") };
+        let mut gtfs = GTFS {
+            file_location: file_location.clone(),
+            working_directory: PathBuf::from(""),
+        };
         // Check if the GTFS file is valid
         gtfs.is_valid()?;
 
         if file_location.is_file() {
-            gtfs.working_directory = working_directory.clone().join(file_location.file_stem().unwrap());
+            gtfs.working_directory = working_directory
+                .clone()
+                .join(file_location.file_stem().unwrap());
         } else {
             gtfs.working_directory = working_directory.clone();
         }
@@ -66,7 +79,6 @@ impl GTFS {
         Ok(gtfs)
     }
 
-
     pub fn is_valid(&self) -> Result<bool, Box<dyn Error>> {
         // Get all file names
         let file_names = self.get_filenames()?;
@@ -77,32 +89,63 @@ impl GTFS {
         }
 
         // Create a vector of the required file names and check if they exist
-        let required_files = vec!["agency.txt", "stops.txt", "routes.txt", "trips.txt", "stop_times.txt"];
+        let required_files = vec![
+            "agency.txt",
+            "stops.txt",
+            "routes.txt",
+            "trips.txt",
+            "stop_times.txt",
+        ];
         for required_file in required_files {
             if !file_names.contains(&required_file.to_string()) {
-                return Err(format!("Required file does not exist in GTFS data: {:?}", required_file))?;
+                return Err(format!(
+                    "Required file does not exist in GTFS data: {:?}",
+                    required_file
+                ))?;
             }
         }
 
         // Conditionally required files calendar and calendar_dates
         // Either calendar or calendar_dates must exist
-        if !file_names.contains(&"calendar.txt".to_string()) && !file_names.contains(&"calendar_dates.txt".to_string()) {
-            return Err(format!("Either calendar.txt or calendar_dates.txt must exist in GTFS data: {:?}", self.file_location))?;
+        if !file_names.contains(&"calendar.txt".to_string())
+            && !file_names.contains(&"calendar_dates.txt".to_string())
+        {
+            return Err(format!(
+                "Either calendar.txt or calendar_dates.txt must exist in GTFS data: {:?}",
+                self.file_location
+            ))?;
         }
         // feed_info becomes required if translations doesn't exist
-        if !file_names.contains(&"translations.txt".to_string()) && !file_names.contains(&"feed_info.txt".to_string()) {
-            return Err(format!("Either feed_info.txt or translations.txt must exist in GTFS data: {:?}", self.file_location))?;
+        if !file_names.contains(&"translations.txt".to_string())
+            && !file_names.contains(&"feed_info.txt".to_string())
+        {
+            return Err(format!(
+                "Either feed_info.txt or translations.txt must exist in GTFS data: {:?}",
+                self.file_location
+            ))?;
         }
 
         // Optional files fare_attributes, fare_rules, shapes, frequencies, transfers, pathways, levels, translations, attributions
         // Inform if optional files are missing
-        let optional_files = vec!["fare_attributes.txt", "fare_rules.txt", "shapes.txt", "frequencies.txt", "transfers.txt", "pathways.txt", "levels.txt", "translations.txt", "attributions.txt"];
+        let optional_files = vec![
+            "fare_attributes.txt",
+            "fare_rules.txt",
+            "shapes.txt",
+            "frequencies.txt",
+            "transfers.txt",
+            "pathways.txt",
+            "levels.txt",
+            "translations.txt",
+            "attributions.txt",
+        ];
         for optional_file in optional_files {
             if !file_names.contains(&optional_file.to_string()) {
-                info!("Optional file does not exist in GTFS data: {:?}", optional_file);
+                info!(
+                    "Optional file does not exist in GTFS data: {:?}",
+                    optional_file
+                );
             }
         }
-
 
         // All valid
         Ok(true)
@@ -112,9 +155,17 @@ impl GTFS {
     pub fn get_filenames(&self) -> Result<Vec<String>, String> {
         // Check if doesnt exist or isnt a folder or zip file
         if !self.file_location.exists() {
-            Err(format!("File or folder does not exist: {:?}", self.file_location))?;
-        } else if !self.file_location.is_dir() && self.file_location.extension().unwrap_or_default() != "zip" {
-            Err(format!("File is not a valid zip file or folder: {:?}", self.file_location))?;
+            Err(format!(
+                "File or folder does not exist: {:?}",
+                self.file_location
+            ))?;
+        } else if !self.file_location.is_dir()
+            && self.file_location.extension().unwrap_or_default() != "zip"
+        {
+            Err(format!(
+                "File is not a valid zip file or folder: {:?}",
+                self.file_location
+            ))?;
         }
         // Create file_names vector
         let file_names: Vec<String>;
@@ -125,17 +176,24 @@ impl GTFS {
                 .map_err(|err| format!("Error reading folder content: {}", err))?
                 .map(|entry| entry.map_err(|err| format!("Error reading folder content: {}", err)))
                 .filter(|entry| entry.as_ref().unwrap().path().is_file())
-                .map(|entry| entry.unwrap().path().file_name().unwrap().to_str().unwrap().to_string())
+                .map(|entry| {
+                    entry
+                        .unwrap()
+                        .path()
+                        .file_name()
+                        .unwrap()
+                        .to_str()
+                        .unwrap()
+                        .to_string()
+                })
                 .collect();
         } else {
             debug!("Reading zip file content: {:?}", self.file_location);
-            let file = fs::File::open(&self.file_location).map_err(|err| {
-                format!("Error opening zip file: {}", err)
-            })?;
+            let file = fs::File::open(&self.file_location)
+                .map_err(|err| format!("Error opening zip file: {}", err))?;
 
-            let mut zip_file = ZipArchive::new(file).map_err(|err| {
-                format!("Error reading zip file content | {}", err)
-            })?;
+            let mut zip_file = ZipArchive::new(file)
+                .map_err(|err| format!("Error reading zip file content | {}", err))?;
 
             // Read all files in the zip file and return the file names as a vector of strings
             file_names = (0..zip_file.len())
@@ -157,7 +215,10 @@ impl GTFS {
     pub fn get_file(&self, file_name: &str) -> Result<PathBuf, Box<dyn Error>> {
         // Check if file name is in get_filenames
         if !self.get_filenames()?.contains(&file_name.to_string()) {
-            Err(format!("File does not exist in GTFS data: {:?}", self.file_location))?;
+            Err(format!(
+                "File does not exist in GTFS data: {:?}",
+                self.file_location
+            ))?;
         }
 
         if self.file_location.join(file_name).exists() {
@@ -168,23 +229,20 @@ impl GTFS {
         }
 
         // Extract from zip file
-        let opened_zip_file = fs::File::open(&self.file_location).map_err(|err| {
-            format!("Error opening zip file: {}", err)
-        })?;
+        let opened_zip_file = fs::File::open(&self.file_location)
+            .map_err(|err| format!("Error opening zip file: {}", err))?;
 
         // Create zip file
-        let mut opened_zip_file = ZipArchive::new(opened_zip_file).map_err(|err| {
-            format!("Error reading zip file content | {}", err)
-        })?;
+        let mut opened_zip_file = ZipArchive::new(opened_zip_file)
+            .map_err(|err| format!("Error reading zip file content | {}", err))?;
 
         // Get file pointer inside zip file
-        let file_in_zip = opened_zip_file.by_name(file_name).map_err(|err| {
-            format!("Error reading file from zip file: {}", err)
-        })?;
+        let file_in_zip = opened_zip_file
+            .by_name(file_name)
+            .map_err(|err| format!("Error reading file from zip file: {}", err))?;
 
-        let unzipped_file_path = unzip_file(file_in_zip, &self.working_directory).map_err(|err| {
-            format!("Error extracting file from zip file: {}", err)
-        })?;
+        let unzipped_file_path = unzip_file(file_in_zip, &self.working_directory)
+            .map_err(|err| format!("Error extracting file from zip file: {}", err))?;
 
         // Return path to extracted file
         Ok(unzipped_file_path)
@@ -192,60 +250,77 @@ impl GTFS {
     pub fn service_date_range(&self) -> Result<ServiceRange, Box<dyn Error>> {
         let calendar_file = self.get_file("calendar.txt");
         if calendar_file.is_err() {
-            return Err(format!("Error reading calendar file: {}", calendar_file.unwrap_err()))?;
+            return Err(format!(
+                "Error reading calendar file: {}",
+                calendar_file.unwrap_err()
+            ))?;
         }
         let start_date = col("start_date")
             .cast(DataType::String)
             .str()
-            .to_date(
-                StrptimeOptions {
-                    format: Some("%Y%m%d".to_string()),
-                    ..Default::default()
-                }
-            ).dt().date();
+            .to_date(StrptimeOptions {
+                format: Some("%Y%m%d".to_string()),
+                ..Default::default()
+            })
+            .dt()
+            .date();
         let latest_start_date = col("start_date")
             .alias("latest_start_date")
             .cast(DataType::String)
             .str()
-            .to_date(
-                StrptimeOptions {
-                    format: Some("%Y%m%d".to_string()),
-                    ..Default::default()
-                }
-            ).dt().date();
+            .to_date(StrptimeOptions {
+                format: Some("%Y%m%d".to_string()),
+                ..Default::default()
+            })
+            .dt()
+            .date();
         let end_date = col("end_date")
             .cast(DataType::String)
             .str()
-            .to_date(
-                StrptimeOptions {
-                    format: Some("%Y%m%d".to_string()),
-                    ..Default::default()
-                }
-            ).dt().date();
+            .to_date(StrptimeOptions {
+                format: Some("%Y%m%d".to_string()),
+                ..Default::default()
+            })
+            .dt()
+            .date();
         // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
         let lf = LazyCsvReader::new(calendar_file?)
             .has_header(true)
             .finish()?
-            .select(&[start_date.clone().min(), latest_start_date.max(), end_date.max()]);
+            .select(&[
+                start_date.clone().min(),
+                latest_start_date.max(),
+                end_date.max(),
+            ]);
 
         let df = lf.with_streaming(true).collect()?;
         let start_date: String = df.column("start_date").unwrap().get(0).unwrap().to_string();
-        let latest_start_date: String = df.column("latest_start_date").unwrap().get(0).unwrap().to_string();
+        let latest_start_date: String = df
+            .column("latest_start_date")
+            .unwrap()
+            .get(0)
+            .unwrap()
+            .to_string();
         let end_date: String = df.column("end_date").unwrap().get(0).unwrap().to_string();
-        Ok(ServiceRange { start_date, latest_start_date, end_date })
+        Ok(ServiceRange {
+            start_date,
+            latest_start_date,
+            end_date,
+        })
     }
     pub(crate) fn get_metadata(&self) -> Result<Metadata, Box<dyn Error>> {
         let service_range = self.service_date_range()?;
         Ok(Metadata { service_range })
     }
 
-    pub fn filter_file_by_dates(&self,
-                                file_name: &PathBuf,
-                                output_folder: &PathBuf,
-                                start_date: &str,
-                                end_date: &str,
-                                start_date_column: &str,
-                                end_date_column: &str,
+    pub fn filter_file_by_dates(
+        &self,
+        file_name: &PathBuf,
+        output_folder: &PathBuf,
+        start_date: &str,
+        end_date: &str,
+        start_date_column: &str,
+        end_date_column: &str,
     ) -> Result<PathBuf, Box<dyn Error>> {
         // Get the file name and add it to the output folder
         let output_file = output_folder.join(file_name.file_name().unwrap());
@@ -300,7 +375,7 @@ impl GTFS {
             .filter(
                 col(start_date_column)
                     .gt_eq(lit(start_date_converted))
-                    .and(col(end_date_column).lt_eq(lit(end_date_converted)))
+                    .and(col(end_date_column).lt_eq(lit(end_date_converted))),
             )
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options)?;
@@ -308,14 +383,24 @@ impl GTFS {
     }
 
     // Write function to get a column from a csv file and format it to a definable type
-    pub fn get_column(&self, file_path: PathBuf, column_name: &str, data_type: DataType) -> Result<Series, Box<dyn Error>> {
+    pub fn get_column(
+        &self,
+        file_path: PathBuf,
+        column_name: &str,
+        data_type: DataType,
+    ) -> Result<Series, Box<dyn Error>> {
         // Calls get_column with the file_name and column_name and data_type
         let df = self.get_columns(file_path, vec![column_name], vec![data_type])?;
         // Return column
         Ok(df.column(column_name).unwrap().clone())
     }
 
-    pub fn get_columns(&self, file_path: PathBuf, column_names: Vec<&str>, data_types: Vec<DataType>) -> Result<DataFrame, Box<dyn Error>> {
+    pub fn get_columns(
+        &self,
+        file_path: PathBuf,
+        column_names: Vec<&str>,
+        data_types: Vec<DataType>,
+    ) -> Result<DataFrame, Box<dyn Error>> {
         let mut columns = Vec::new();
         // Iterate through the column names and data types and create a vector of expressions and add it to columns
         for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
@@ -333,7 +418,14 @@ impl GTFS {
         Ok(df)
     }
 
-    pub fn filter_file_by_values(&self, file: &PathBuf, output_folder: &PathBuf, column_names: Vec<&str>, data_types: Vec<DataType>, allowed_values: &Series) -> Result<PathBuf, Box<dyn Error>> {
+    pub fn filter_file_by_values(
+        &self,
+        file: &PathBuf,
+        output_folder: &PathBuf,
+        column_names: Vec<&str>,
+        data_types: Vec<DataType>,
+        allowed_values: &Series,
+    ) -> Result<PathBuf, Box<dyn Error>> {
         // If file doesn't exist return Err
         if !file.exists() {
             return Err(format!("File does not exist: {:?}", file))?;
@@ -378,15 +470,19 @@ impl GTFS {
                 .collect()?;
             // Write the headers to file
             let mut output_file_ensured = File::create(&output_file)?;
-            CsvWriter::new(&mut output_file_ensured).include_header(true).finish(&mut df).unwrap();
+            CsvWriter::new(&mut output_file_ensured)
+                .include_header(true)
+                .finish(&mut df)
+                .unwrap();
         }
         // Return path
         Ok(output_file)
     }
 
-    pub fn process_common_files(&self,
-                                output_folder: &PathBuf,
-                                route_trip_shape_ids_to_keep: &DataFrame,
+    pub fn process_common_files(
+        &self,
+        output_folder: &PathBuf,
+        route_trip_shape_ids_to_keep: &DataFrame,
     ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
         // Required files
         let routes_file = self.get_file("routes.txt")?;
@@ -404,40 +500,87 @@ impl GTFS {
         let mut file_paths: Vec<PathBuf> = vec![];
 
         // Filter files
-        let filtered_routes_file = self.filter_file_by_values(&routes_file, output_folder, vec!["route_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("route_id")?)?;
+        let filtered_routes_file = self.filter_file_by_values(
+            &routes_file,
+            output_folder,
+            vec!["route_id"],
+            vec![DataType::Int64],
+            route_trip_shape_ids_to_keep.column("route_id")?,
+        )?;
         file_paths.push(filtered_routes_file.clone());
-        let filtered_shapes_file = self.filter_file_by_values(&shapes_file, output_folder, vec!["shape_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("shape_id")?)?;
+        let filtered_shapes_file = self.filter_file_by_values(
+            &shapes_file,
+            output_folder,
+            vec!["shape_id"],
+            vec![DataType::Int64],
+            route_trip_shape_ids_to_keep.column("shape_id")?,
+        )?;
         file_paths.push(filtered_shapes_file);
-        let filtered_stop_times_file = self.filter_file_by_values(&stop_times_file, output_folder, vec!["trip_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("trip_id")?)?;
+        let filtered_stop_times_file = self.filter_file_by_values(
+            &stop_times_file,
+            output_folder,
+            vec!["trip_id"],
+            vec![DataType::Int64],
+            route_trip_shape_ids_to_keep.column("trip_id")?,
+        )?;
         file_paths.push(filtered_stop_times_file.clone());
 
-        let agency_ids_to_keep = self.get_column(filtered_routes_file.clone(), "agency_id", DataType::Int64)?;
-        let filtered_agency_file = self.filter_file_by_values(&agency_file, output_folder, vec!["agency_id"], vec![DataType::Int64], &agency_ids_to_keep)?;
+        let agency_ids_to_keep =
+            self.get_column(filtered_routes_file.clone(), "agency_id", DataType::Int64)?;
+        let filtered_agency_file = self.filter_file_by_values(
+            &agency_file,
+            output_folder,
+            vec!["agency_id"],
+            vec![DataType::Int64],
+            &agency_ids_to_keep,
+        )?;
         file_paths.push(filtered_agency_file);
 
         // Filter stops file by stop_ids_to_keep
-        let stop_ids_to_keep = self.get_column(filtered_stop_times_file, "stop_id", DataType::Int64)?;
-        let filtered_stops_file = self.filter_file_by_values(&stops_file, output_folder, vec!["stop_id"], vec![DataType::Int64], &stop_ids_to_keep)?;
+        let stop_ids_to_keep =
+            self.get_column(filtered_stop_times_file, "stop_id", DataType::Int64)?;
+        let filtered_stops_file = self.filter_file_by_values(
+            &stops_file,
+            output_folder,
+            vec!["stop_id"],
+            vec![DataType::Int64],
+            &stop_ids_to_keep,
+        )?;
         file_paths.push(filtered_stops_file);
 
         // Filter conditional files
         if frequencies_file.exists() {
             // Frequencies is an optional file
-            self.filter_file_by_values(&frequencies_file, output_folder, vec!["trip_id"], vec![DataType::Int64], route_trip_shape_ids_to_keep.column("trip_id")?)?;
+            self.filter_file_by_values(
+                &frequencies_file,
+                output_folder,
+                vec!["trip_id"],
+                vec![DataType::Int64],
+                route_trip_shape_ids_to_keep.column("trip_id")?,
+            )?;
             file_paths.push(frequencies_file);
         } else {
             info!("Frequencies file not found, skipping");
         }
         // Filter transfers file by stop_ids_to_keep the file is optional
         if transfers_file.exists() {
-            self.filter_file_by_values(&transfers_file, output_folder, vec!["from_stop_id", "to_stop_id"], vec![DataType::Int64, DataType::Int64], &stop_ids_to_keep)?;
+            self.filter_file_by_values(
+                &transfers_file,
+                output_folder,
+                vec!["from_stop_id", "to_stop_id"],
+                vec![DataType::Int64, DataType::Int64],
+                &stop_ids_to_keep,
+            )?;
             file_paths.push(transfers_file);
         } else {
             info!("Transfers file not found, skipping");
         }
         // Copy feed_info file to output folder
         if feed_info_file.exists() {
-            fs::copy(feed_info_file.clone(), output_folder.join(feed_info_file.file_name().unwrap()))?;
+            fs::copy(
+                feed_info_file.clone(),
+                output_folder.join(feed_info_file.file_name().unwrap()),
+            )?;
             file_paths.push(feed_info_file);
         } else {
             info!("Feed Info file not found, skipping");

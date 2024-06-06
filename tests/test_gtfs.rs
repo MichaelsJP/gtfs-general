@@ -1,16 +1,16 @@
 #[cfg(test)]
 mod tests {
-    use std::fs;
-    use std::fs::File;
-    use std::path::PathBuf;
+    use gtfs_general::common::test_utils::setup_temp_gtfs_data;
+    use gtfs_general::gtfs::gtfs::{ServiceRange, GTFS};
     use polars::frame::DataFrame;
     use polars::prelude::DataType::Int32;
     use polars::prelude::NamedFrom;
     use polars::series::Series;
-    use tempfile::{tempdir};
-    use gtfs_general::gtfs::gtfs::{GTFS, ServiceRange};
     use pretty_assertions::{assert_eq, assert_ne};
-    use gtfs_general::common::test_utils::setup_temp_gtfs_data;
+    use std::fs;
+    use std::fs::File;
+    use std::path::PathBuf;
+    use tempfile::tempdir;
 
     #[test]
     fn test_get_filenames_success_folder_and_no_working_directory() {
@@ -22,7 +22,10 @@ mod tests {
         setup_temp_gtfs_data(&temp_folder_valid).expect("Failed to setup temp gtfs data");
 
         // Create Gtfs instance with new
-        let gtfs = GTFS::new(temp_folder_valid.path().to_path_buf().clone(), non_existent_subfolder.clone());
+        let gtfs = GTFS::new(
+            temp_folder_valid.path().to_path_buf().clone(),
+            non_existent_subfolder.clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -65,7 +68,10 @@ mod tests {
 
         // Check temp_location is not the same as the gtfs_zip_path but an existing folder
         assert_ne!(gtfs.working_directory, gtfs_zip_path);
-        assert_eq!(gtfs.working_directory, non_existent_subfolder.clone().join("ic_ice_gtfs_germany"));
+        assert_eq!(
+            gtfs.working_directory,
+            non_existent_subfolder.clone().join("ic_ice_gtfs_germany")
+        );
 
         // Act
         let result = gtfs.get_filenames();
@@ -92,12 +98,18 @@ mod tests {
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
 
         // Create Gtfs instance and pass nonexistent path as a clone
-        let gtfs = GTFS::new(nonexistent_path.clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            nonexistent_path.clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
 
         // Assert
         assert!(gtfs.is_err(), "Expected Err, got Ok");
         let error_message = gtfs.err().unwrap();
-        assert!(error_message.to_string().contains(&format!("File or folder does not exist: {:?}", nonexistent_path)));
+        assert!(error_message.to_string().contains(&format!(
+            "File or folder does not exist: {:?}",
+            nonexistent_path
+        )));
     }
 
     #[test]
@@ -109,11 +121,17 @@ mod tests {
         File::create(invalid_zip_path.clone()).expect("Failed to create file");
 
         // Create Gtfs instance
-        let gtfs = GTFS::new(invalid_zip_path.clone(), temp_folder.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            invalid_zip_path.clone(),
+            temp_folder.path().to_path_buf().clone(),
+        );
         // Assert
         assert!(gtfs.is_err(), "Expected Err, got Ok");
         let error_message = gtfs.err().unwrap();
-        assert!(error_message.to_string().contains(&format!("File is not a valid zip file or folder: {:?}", invalid_zip_path)));
+        assert!(error_message.to_string().contains(&format!(
+            "File is not a valid zip file or folder: {:?}",
+            invalid_zip_path
+        )));
     }
 
     #[test]
@@ -122,12 +140,18 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
 
         // Create Gtfs instance
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_folder.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_folder.path().to_path_buf().clone(),
+        );
 
         // Assert
         assert!(gtfs.is_err(), "Expected Err, got Ok");
         let error_message = gtfs.err().unwrap();
-        assert!(error_message.to_string().contains(&format!("No files found in folder {:?}", temp_folder.path().to_path_buf())));
+        assert!(error_message.to_string().contains(&format!(
+            "No files found in folder {:?}",
+            temp_folder.path().to_path_buf()
+        )));
     }
 
     #[test]
@@ -149,7 +173,10 @@ mod tests {
         // Assert
         assert!(non_existent_subfolder.is_dir());
         assert!(temp_working_directory.path().is_dir());
-        assert_eq!(gtfs.working_directory, non_existent_subfolder.join("ic_ice_gtfs_germany"));
+        assert_eq!(
+            gtfs.working_directory,
+            non_existent_subfolder.join("ic_ice_gtfs_germany")
+        );
     }
 
     #[test]
@@ -160,7 +187,10 @@ mod tests {
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
 
         // Create Gtfs instance
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -211,7 +241,10 @@ mod tests {
         let non_existent_file = gtfs.get_file("foo.txt");
         assert!(non_existent_file.is_err(), "Expected Err, got Ok");
         let error_message = non_existent_file.err().unwrap();
-        assert!(error_message.to_string().contains(&"File does not exist in GTFS data: \"tests/files/ic_ice_gtfs_germany.zip\"".to_string()))
+        assert!(error_message.to_string().contains(
+            &"File does not exist in GTFS data: \"tests/files/ic_ice_gtfs_germany.zip\""
+                .to_string()
+        ))
     }
 
     #[test]
@@ -219,7 +252,10 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -233,12 +269,17 @@ mod tests {
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         let corrupt_zip_path = temp_folder.path().join("corrupt.zip");
         File::create(corrupt_zip_path.clone()).expect("Failed to create file");
-        let gtfs = GTFS::new(corrupt_zip_path, temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            corrupt_zip_path,
+            temp_working_directory.path().to_path_buf().clone(),
+        );
 
         // Assert assert gtfs is_err
         assert!(gtfs.is_err(), "Expected Err, got Ok");
         let error_message = gtfs.err().unwrap();
-        assert!(error_message.to_string().contains(&format!("Error reading zip file content | invalid Zip archive: Invalid zip header")));
+        assert!(error_message.to_string().contains(&format!(
+            "Error reading zip file content | invalid Zip archive: Invalid zip header"
+        )));
     }
 
     #[test]
@@ -247,18 +288,25 @@ mod tests {
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         let zip_path = PathBuf::from("tests/files/ic_ice_gtfs_germany.zip");
         // Remove write permission from the temp_working_directory
-        let mut perms = fs::metadata(temp_working_directory.path()).unwrap().permissions();
+        let mut perms = fs::metadata(temp_working_directory.path())
+            .unwrap()
+            .permissions();
         perms.set_readonly(true);
         fs::set_permissions(temp_working_directory.path(), perms).unwrap();
         // Create Gtfs instance with healthy gtfs data but ask for non existent file
-        let gtfs = GTFS::new(zip_path, temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            zip_path,
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
         let non_existent_file = gtfs.get_file("stops.txt");
         assert!(non_existent_file.is_err(), "Expected Err, got Ok");
         let error_message = non_existent_file.err().unwrap();
-        assert!(error_message.to_string().contains(&format!("Error extracting file from zip file: Permission denied (os error 13)")));
+        assert!(error_message.to_string().contains(&format!(
+            "Error extracting file from zip file: Permission denied (os error 13)"
+        )));
     }
 
     #[test]
@@ -267,7 +315,10 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -288,7 +339,10 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
         // Act
@@ -321,12 +375,17 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
         // Act
-        let calendar_dates_file = gtfs.get_file("calendar_dates.txt").expect("Failed to get file");
+        let calendar_dates_file = gtfs
+            .get_file("calendar_dates.txt")
+            .expect("Failed to get file");
         let result = gtfs.filter_file_by_dates(
             &calendar_dates_file,
             &temp_working_directory.path().to_path_buf().clone(),
@@ -355,7 +414,10 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -378,13 +440,20 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
         // Act
         let calendar_file = gtfs.get_file("calendar.txt").expect("Failed to get file");
-        let result = gtfs.get_columns(calendar_file, vec!["service_id", "start_date"], vec![Int32, Int32]);
+        let result = gtfs.get_columns(
+            calendar_file,
+            vec!["service_id", "start_date"],
+            vec![Int32, Int32],
+        );
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
@@ -406,7 +475,10 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -414,7 +486,13 @@ mod tests {
         let allowed: Series = [1, 2].iter().collect();
         // Create face pathbuf
         let fake_path = PathBuf::from("fake_path");
-        let result = gtfs.filter_file_by_values(&fake_path, &temp_working_directory.path().to_path_buf(), vec!["service_id"], vec![Int32], &allowed);
+        let result = gtfs.filter_file_by_values(
+            &fake_path,
+            &temp_working_directory.path().to_path_buf(),
+            vec!["service_id"],
+            vec![Int32],
+            &allowed,
+        );
         // Assert error
         assert!(result.is_err(), "Expected Err, got Ok");
     }
@@ -425,14 +503,23 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
         // Act
         let allowed: Series = [68, 76].iter().collect();
         let trips_file = gtfs.get_file("trips.txt").expect("Failed to get file");
-        let result = gtfs.filter_file_by_values(&trips_file, &temp_working_directory.path().to_path_buf(), vec!["service_id"], vec![Int32], &allowed);
+        let result = gtfs.filter_file_by_values(
+            &trips_file,
+            &temp_working_directory.path().to_path_buf(),
+            vec!["service_id"],
+            vec![Int32],
+            &allowed,
+        );
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
@@ -454,14 +541,23 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
         // Act
         let allowed: Series = [9, 68].iter().collect();
         let trips_file = gtfs.get_file("trips.txt").expect("Failed to get file");
-        let result = gtfs.filter_file_by_values(&trips_file, &temp_working_directory.path().to_path_buf(), vec!["service_id", "route_id"], vec![Int32, Int32], &allowed);
+        let result = gtfs.filter_file_by_values(
+            &trips_file,
+            &temp_working_directory.path().to_path_buf(),
+            vec!["service_id", "route_id"],
+            vec![Int32, Int32],
+            &allowed,
+        );
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
@@ -473,7 +569,10 @@ mod tests {
         // Check trips.txt
         let max_line_number = file_content.lines().count();
         for line_number in 0..max_line_number {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             match line_number {
                 0 => assert_eq!(line, "route_id,service_id,direction_id,trip_id,shape_id"),
                 1 => assert_eq!(line, "9,68,0,1136,"),
@@ -491,7 +590,10 @@ mod tests {
         let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
@@ -507,8 +609,14 @@ mod tests {
             Series::new("direction_id", [0, 0, 0, 0]),
             Series::new("trip_id", [1136, 114, 1855, 2539]),
             Series::new("shape_id", ["", "", "", ""]),
-        ]).expect("Failed to create dataframe");
-        let result = gtfs.process_common_files(&temp_working_directory.path().to_path_buf(), &route_trip_shape_ids_to_keep).expect("Failed to process common files");
+        ])
+        .expect("Failed to create dataframe");
+        let result = gtfs
+            .process_common_files(
+                &temp_working_directory.path().to_path_buf(),
+                &route_trip_shape_ids_to_keep,
+            )
+            .expect("Failed to process common files");
 
         // First assert all files exist in result
         // Second find the file routes.txt and check the content
@@ -517,12 +625,21 @@ mod tests {
             assert!(file.is_file());
         }
         // check routes.txt
-        let routes_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "routes.txt").expect("Failed to find routes.txt");
+        let routes_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "routes.txt")
+            .expect("Failed to find routes.txt");
         let file_content = fs::read_to_string(routes_file).expect("Failed to read file");
         for line_number in 0..file_content.lines().count() {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             match line_number {
-                0 => assert_eq!(line, "route_long_name,route_short_name,agency_id,route_type,route_id"),
+                0 => assert_eq!(
+                    line,
+                    "route_long_name,route_short_name,agency_id,route_type,route_id"
+                ),
                 1 => assert_eq!(line, "Intercity-Express,ICE 79,6,2,9"),
                 _ => panic!("Unexpected line: {}", line),
             }
@@ -530,25 +647,44 @@ mod tests {
         // check agency.txt
         // agency_id,agency_name,agency_url,agency_timezone,agency_lang
         // 6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de
-        let agency_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "agency.txt").expect("Failed to find agency.txt");
+        let agency_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "agency.txt")
+            .expect("Failed to find agency.txt");
         let file_content = fs::read_to_string(agency_file).expect("Failed to read file");
         for line_number in 0..file_content.lines().count() {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             match line_number {
-                0 => assert_eq!(line, "agency_id,agency_name,agency_url,agency_timezone,agency_lang"),
-                1 => assert_eq!(line, "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de"),
+                0 => assert_eq!(
+                    line,
+                    "agency_id,agency_name,agency_url,agency_timezone,agency_lang"
+                ),
+                1 => assert_eq!(
+                    line,
+                    "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de"
+                ),
                 _ => panic!("Unexpected line: {}", line),
             }
         }
         // check feed_info.txt
-        let feed_info_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "feed_info.txt").expect("Failed to find feed_info.txt");
+        let feed_info_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "feed_info.txt")
+            .expect("Failed to find feed_info.txt");
         let file_content = fs::read_to_string(feed_info_file).expect("Failed to read file");
         // feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url
         file_content.contains("feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url");
         // check line two contains "gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V."
-        file_content.contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.");
+        file_content
+            .contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.");
         for line_number in 0..file_content.lines().count() {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             match line_number {
                 0 => assert_eq!(line, "feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url"),
                 1 => assert!(line.contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.")),
@@ -559,12 +695,18 @@ mod tests {
         // stop_name,stop_id,stop_lat,stop_lon
         // Aachen Hbf,318,50.7678,6.091499
         // last line Liège-Guillemins,915,50.62436,5.566483
-        let stops_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "stops.txt").expect("Failed to find stops.txt");
+        let stops_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "stops.txt")
+            .expect("Failed to find stops.txt");
         let file_content = fs::read_to_string(stops_file).expect("Failed to read file");
         // Get max line number
         let max_line_number = file_content.lines().count();
         for line_number in 0..max_line_number {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             if line_number == 0 {
                 assert_eq!(line, "stop_name,stop_id,stop_lat,stop_lon");
             } else if line_number == 1 {
@@ -572,18 +714,23 @@ mod tests {
             } else if line_number == max_line_number - 1 {
                 assert_eq!(line, "Liège-Guillemins,915,50.62436,5.566483");
             }
-
         }
         // Check stop_times.txt
         // trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type
         // 1136,18:25:00,18:25:00,1334,0,,
         // last line 2539,22:13:00,22:13:00,1059,5,,
-        let stop_times_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "stop_times.txt").expect("Failed to find stop_times.txt");
+        let stop_times_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "stop_times.txt")
+            .expect("Failed to find stop_times.txt");
         let file_content = fs::read_to_string(stop_times_file).expect("Failed to read file");
         // Get max line number
         let max_line_number = file_content.lines().count();
         for line_number in 0..max_line_number {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             if line_number == 0 {
                 assert_eq!(line, "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type");
             } else if line_number == 1 {
@@ -593,17 +740,25 @@ mod tests {
             }
         }
 
-
         // Check shapes.txt
         // shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence
-        let shapes_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt").expect("Failed to find shapes.txt");
+        let shapes_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt")
+            .expect("Failed to find shapes.txt");
         let file_content = fs::read_to_string(shapes_file).expect("Failed to read file");
         // Get max line number
         let max_line_number = file_content.lines().count();
         for line_number in 0..max_line_number {
-            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            let line = file_content
+                .lines()
+                .nth(line_number)
+                .expect("Failed to get line");
             match line_number {
-                0 => assert_eq!(line, "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"),
+                0 => assert_eq!(
+                    line,
+                    "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"
+                ),
                 _ => panic!("Unexpected line: {}", line),
             }
         }
