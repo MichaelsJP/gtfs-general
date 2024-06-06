@@ -6,6 +6,7 @@ use crate::common::unzip_module::unzip_file;
 use ::zip::ZipArchive;
 use polars::prelude::*;
 use std::fmt;
+use std::fs::File;
 use polars::export::chrono::NaiveDate;
 
 pub struct ServiceRange {
@@ -92,7 +93,7 @@ impl GTFS {
         if !file_names.contains(&"translations.txt".to_string()) && !file_names.contains(&"feed_info.txt".to_string()) {
             return Err(format!("Either feed_info.txt or translations.txt must exist in GTFS data: {:?}", self.file_location))?;
         }
-Q
+
         // Optional files fare_attributes, fare_rules, shapes, frequencies, transfers, pathways, levels, translations, attributions
         // Inform if optional files are missing
         let optional_files = vec!["fare_attributes.txt", "fare_rules.txt", "shapes.txt", "frequencies.txt", "transfers.txt", "pathways.txt", "levels.txt", "translations.txt", "attributions.txt"];
@@ -333,6 +334,10 @@ Q
     }
 
     pub fn filter_file_by_values(&self, file: &PathBuf, output_folder: &PathBuf, column_names: Vec<&str>, data_types: Vec<DataType>, allowed_values: &Series) -> Result<PathBuf, Box<dyn Error>> {
+        // If file doesn't exist return Err
+        if !file.exists() {
+            return Err(format!("File does not exist: {:?}", file))?;
+        }
         let output_file = output_folder.join(file.file_name().unwrap());
         let allowed = allowed_values.cast(&DataType::Int64).unwrap();
         let mut columns = Vec::new();
@@ -348,7 +353,7 @@ Q
                 filter = column.is_in(lit(allowed.clone()));
             };
         }
-        let csv_writer_options = CsvWriterOptions {
+        let mut csv_writer_options = CsvWriterOptions {
             include_bom: false,
             include_header: true,
             batch_size: 10000,
@@ -359,10 +364,22 @@ Q
         LazyCsvReader::new(file)
             .has_header(true)
             .finish()?
-            .with_columns(columns)
+            .with_columns(columns.clone())
             .filter(filter)
             .with_streaming(true)
-            .sink_csv(output_file.clone(), csv_writer_options)?;
+            .sink_csv(output_file.clone(), csv_writer_options.clone())?;
+        // Check if file is empty
+        if output_file.metadata()?.len() == 0 {
+            // Get number of rows from file
+            let mut df = LazyCsvReader::new(file)
+                .has_header(true)
+                .with_n_rows(Some(0))
+                .finish()?
+                .collect()?;
+            // Write the headers to file
+            let mut output_file_ensured = File::create(&output_file)?;
+            CsvWriter::new(&mut output_file_ensured).include_header(true).finish(&mut df).unwrap();
+        }
         // Return path
         Ok(output_file)
     }

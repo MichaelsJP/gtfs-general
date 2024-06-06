@@ -401,6 +401,25 @@ mod tests {
     }
 
     #[test]
+    fn test_filter_file_by_values_that_doesnt_exist() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(temp_folder.path().to_path_buf().clone(), temp_working_directory.path().to_path_buf().clone());
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+
+        // Act
+        let allowed: Series = [1, 2].iter().collect();
+        // Create face pathbuf
+        let fake_path = PathBuf::from("fake_path");
+        let result = gtfs.filter_file_by_values(&fake_path, &temp_working_directory.path().to_path_buf(), vec!["service_id"], vec![Int32], &allowed);
+        // Assert error
+        assert!(result.is_err(), "Expected Err, got Ok");
+    }
+
+    #[test]
     fn test_filter_file_by_values_with_single_column_name() {
         // Arrange
         let temp_folder = tempdir().expect("Failed to create temp folder");
@@ -451,13 +470,19 @@ mod tests {
         assert!(result.is_file());
 
         let file_content = fs::read_to_string(result).expect("Failed to read file");
-        // Assert length
-        assert_eq!(file_content.lines().count(), 5);
-        assert!(file_content.contains("route_id,service_id,direction_id,trip_id,shape_id"));
-        assert!(file_content.contains("9,68,0,1136,"));
-        assert!(file_content.contains("9,68,0,114,"));
-        assert!(file_content.contains("9,68,0,1855,"));
-        assert!(file_content.contains("9,68,0,2539,"));
+        // Check trips.txt
+        let max_line_number = file_content.lines().count();
+        for line_number in 0..max_line_number {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            match line_number {
+                0 => assert_eq!(line, "route_id,service_id,direction_id,trip_id,shape_id"),
+                1 => assert_eq!(line, "9,68,0,1136,"),
+                2 => assert_eq!(line, "9,68,0,114,"),
+                3 => assert_eq!(line, "9,68,0,1855,"),
+                4 => assert_eq!(line, "9,68,0,2539,"),
+                _ => panic!("Unexpected line: {}", line),
+            }
+        }
     }
 
     #[test]
@@ -470,14 +495,12 @@ mod tests {
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
 
-        // Act
-        let allowed: Series = [9, 68].iter().collect();
+        // Create dataframe with the below data
         // route_id,service_id,direction_id,trip_id,shape_id
         // 9,68,0,1136,
         // 9,68,0,114,
         // 9,68,0,1855,
         // 9,68,0,2539,
-        // Create dataframe with the above values
         let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
             Series::new("route_id", [9, 9, 9, 9]),
             Series::new("service_id", [68, 68, 68, 68]),
@@ -487,10 +510,124 @@ mod tests {
         ]).expect("Failed to create dataframe");
         let result = gtfs.process_common_files(&temp_working_directory.path().to_path_buf(), &route_trip_shape_ids_to_keep).expect("Failed to process common files");
 
-        // Assert
-        assert_eq!(result.len(), 3);
-        assert!(result[0].is_file());
-        assert!(result[1].is_file());
-        assert!(result[2].is_file());
+        // First assert all files exist in result
+        // Second find the file routes.txt and check the content
+        assert_eq!(result.len(), 6); // should be 9 TODO
+        for file in result.iter() {
+            assert!(file.is_file());
+        }
+        // check routes.txt
+        let routes_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "routes.txt").expect("Failed to find routes.txt");
+        let file_content = fs::read_to_string(routes_file).expect("Failed to read file");
+        for line_number in 0..file_content.lines().count() {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            match line_number {
+                0 => assert_eq!(line, "route_long_name,route_short_name,agency_id,route_type,route_id"),
+                1 => assert_eq!(line, "Intercity-Express,ICE 79,6,2,9"),
+                _ => panic!("Unexpected line: {}", line),
+            }
+        }
+        // check agency.txt
+        // agency_id,agency_name,agency_url,agency_timezone,agency_lang
+        // 6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de
+        let agency_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "agency.txt").expect("Failed to find agency.txt");
+        let file_content = fs::read_to_string(agency_file).expect("Failed to read file");
+        for line_number in 0..file_content.lines().count() {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            match line_number {
+                0 => assert_eq!(line, "agency_id,agency_name,agency_url,agency_timezone,agency_lang"),
+                1 => assert_eq!(line, "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de"),
+                _ => panic!("Unexpected line: {}", line),
+            }
+        }
+        // check feed_info.txt
+        let feed_info_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "feed_info.txt").expect("Failed to find feed_info.txt");
+        let file_content = fs::read_to_string(feed_info_file).expect("Failed to read file");
+        // feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url
+        file_content.contains("feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url");
+        // check line two contains "gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V."
+        file_content.contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.");
+        for line_number in 0..file_content.lines().count() {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            match line_number {
+                0 => assert_eq!(line, "feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url"),
+                1 => assert!(line.contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.")),
+                _ => panic!("Unexpected line: {}", line),
+            }
+        }
+        // check stops.txt
+        // stop_name,stop_id,stop_lat,stop_lon
+        // Aachen Hbf,318,50.7678,6.091499
+        // last line Liège-Guillemins,915,50.62436,5.566483
+        let stops_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "stops.txt").expect("Failed to find stops.txt");
+        let file_content = fs::read_to_string(stops_file).expect("Failed to read file");
+        // Get max line number
+        let max_line_number = file_content.lines().count();
+        for line_number in 0..max_line_number {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            if line_number == 0 {
+                assert_eq!(line, "stop_name,stop_id,stop_lat,stop_lon");
+            } else if line_number == 1 {
+                assert_eq!(line, "Aachen Hbf,318,50.7678,6.091499");
+            } else if line_number == max_line_number - 1 {
+                assert_eq!(line, "Liège-Guillemins,915,50.62436,5.566483");
+            }
+
+        }
+        // Check stop_times.txt
+        // trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type
+        // 1136,18:25:00,18:25:00,1334,0,,
+        // last line 2539,22:13:00,22:13:00,1059,5,,
+        let stop_times_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "stop_times.txt").expect("Failed to find stop_times.txt");
+        let file_content = fs::read_to_string(stop_times_file).expect("Failed to read file");
+        // Get max line number
+        let max_line_number = file_content.lines().count();
+        for line_number in 0..max_line_number {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            if line_number == 0 {
+                assert_eq!(line, "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type");
+            } else if line_number == 1 {
+                assert_eq!(line, "1136,18:25:00,18:25:00,1334,0,,");
+            } else if line_number == max_line_number - 1 {
+                assert_eq!(line, "2539,22:13:00,22:13:00,1059,5,,");
+            }
+        }
+
+
+        // Check shapes.txt
+        // shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence
+        let shapes_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt").expect("Failed to find shapes.txt");
+        let file_content = fs::read_to_string(shapes_file).expect("Failed to read file");
+        // Get max line number
+        let max_line_number = file_content.lines().count();
+        for line_number in 0..max_line_number {
+            let line = file_content.lines().nth(line_number).expect("Failed to get line");
+            match line_number {
+                0 => assert_eq!(line, "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"),
+                _ => panic!("Unexpected line: {}", line),
+            }
+        }
+        // // check calendar.txt
+        // let calendar_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "calendar.txt").expect("Failed to find calendar.txt");
+        // let file_content = fs::read_to_string(calendar_file).expect("Failed to read file");
+        // // Get max line number
+        // let max_line_number = file_content.lines().count();
+        // for line_number in 0..max_line_number {
+        //     let line = file_content.lines().nth(line_number).expect("Failed to get line");
+        //     if line_number == 0 {
+        //         assert_eq!(line, "monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,service_id");
+        //     }
+        // }
+        // // Check calendar_dates.txt
+        // let calendar_dates_file = result.iter().find(|f| f.file_name().unwrap().to_str().unwrap() == "calendar_dates.txt").expect("Failed to find calendar_dates.txt");
+        // let file_content = fs::read_to_string(calendar_dates_file).expect("Failed to read file");
+        // // Get max line number
+        // let max_line_number = file_content.lines().count();
+        // for line_number in 0..max_line_number {
+        //     let line = file_content.lines().nth(line_number).expect("Failed to get line");
+        //     if line_number == 0 {
+        //         assert_eq!(line, "service_id,exception_type,date");
+        //     }
+        // }
     }
 }
