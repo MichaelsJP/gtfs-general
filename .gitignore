@@ -138,3 +138,5 @@ dmypy.json
 
 # Local rust configs
 .cargo/**
+resources/**
+!resources/test/ic_ice_gtfs_germany.zip
