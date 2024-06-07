@@ -1,0 +1,19 @@
+[package]
+name = "utilities"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "utilities"
+path = "src/lib.rs"
+
+[dependencies]
+tempfile = "3.10.1"
+zip = "2.1.3"
+log = "0.4.21"
+polars = { version = "0.40.0", features = ["lazy", "csv"] }
+
+[features]
+default = []
+# New custom feature for conditional code
+testing = ["default"]

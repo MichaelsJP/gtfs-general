@@ -13,7 +13,7 @@ log = "0.4.20"
 tempfile = "3.9.0"
 lazy_static = { version = "1.4.0", features = [] }
 serde = { version = "1.0.193", features = ["derive"] }
-
+utilities = { path = "utilities", features = ["default"] }
 
 [dev-dependencies]
 rstest = "0.18.2"
@@ -21,3 +21,4 @@ tempdir = "0.3.7"
 grcov = "0.8.19"
 pretty_assertions = "1.4.0"
 cargo-llvm-cov = "0.6.0"
+utilities = { path = "utilities", features = ["testing"] }

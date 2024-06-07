@@ -1,7 +1,6 @@
-pub mod command;
-
 #[doc(hidden)]
 pub use command::App;
 
-pub mod common;
+pub mod command;
+
 pub mod gtfs;

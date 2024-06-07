@@ -1,15 +1,20 @@
-use crate::common::file_module::ensure_header;
-use crate::common::unzip_module::unzip_file;
-use ::zip::ZipArchive;
-use log::{debug, error, info};
-use polars::export::chrono::NaiveDate;
-use polars::prelude::*;
+extern crate utilities;
+
 use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::num::{NonZeroU8, NonZeroUsize};
 use std::path::PathBuf;
+
+use ::zip::ZipArchive;
+use log::{debug, error, info};
+use polars::export::chrono::NaiveDate;
+use polars::prelude::*;
+
+use utilities::common::file_module;
+use utilities::common::file_module::ensure_header;
+use utilities::common::unzip_module::unzip_file;
 
 pub struct ServiceRange {
     pub start_date: String,
@@ -386,7 +391,7 @@ impl GTFS {
             )
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options)?;
-        ensure_header(&file_name, &output_file)?;
+        file_module::ensure_header(&file_name, &output_file)?;
         Ok(output_file)
     }
 
@@ -578,5 +583,67 @@ impl GTFS {
             info!("Feed Info file not found, skipping");
         }
         Ok(file_paths)
+    }
+
+    // Implement extract_by_date
+    pub fn extract_by_date(
+        &self,
+        start_date: &str,
+        end_date: &str,
+        output_folder: &PathBuf,
+    ) -> Result<Vec<PathBuf>, Box<dyn Error>> {
+        let mut processed_files: Vec<PathBuf> = vec![];
+
+        // Get calendar file
+        let calendar_file = self.get_file("calendar.txt")?;
+        let calendar_dates_file = self.get_file("calendar_dates.txt")?;
+        let trips_file = self.get_file("trips.txt")?;
+
+        let filtered_calendar_file = self.filter_file_by_dates(
+            &calendar_file,
+            output_folder,
+            start_date,
+            end_date,
+            "start_date",
+            "end_date",
+        )?;
+        let filtered_calendar_dates_file = self.filter_file_by_dates(
+            &calendar_dates_file,
+            output_folder,
+            start_date,
+            end_date,
+            "date",
+            "date",
+        )?;
+        let mut service_ids_to_keep = self.get_column(
+            filtered_calendar_file.clone(),
+            "service_id",
+            DataType::Int64,
+        )?;
+        let service_ids_to_keep = service_ids_to_keep.append(&self.get_column(
+            filtered_calendar_dates_file.clone(),
+            "service_id",
+            DataType::Int64,
+        )?)?;
+        let filtered_trips_file = self.filter_file_by_values(
+            &trips_file,
+            output_folder,
+            vec!["service_id"],
+            vec![DataType::Int64],
+            service_ids_to_keep,
+        )?;
+        let route_trip_shape_ids_to_keep = self.get_columns(
+            filtered_trips_file.clone(),
+            vec!["route_id", "trip_id", "shape_id"],
+            vec![DataType::Int64, DataType::Int64, DataType::Int64],
+        )?;
+        let mut processed_common_files =
+            self.process_common_files(output_folder, &route_trip_shape_ids_to_keep)?;
+        processed_files.push(filtered_calendar_file);
+        processed_files.push(filtered_calendar_dates_file);
+        processed_files.push(filtered_trips_file);
+        processed_files.append(&mut processed_common_files);
+        // Return the file paths
+        Ok(processed_files)
     }
 }

@@ -1,17 +1,20 @@
 #[cfg(test)]
 mod tests {
-    use gtfs_general::common::test_utils::setup_temp_gtfs_data;
-    use gtfs_general::gtfs::gtfs::{ServiceRange, GTFS};
+    use std::collections::HashMap;
+    use std::fs;
+    use std::fs::File;
+    use std::path::PathBuf;
+
     use polars::datatypes::DataType;
     use polars::frame::DataFrame;
     use polars::prelude::DataType::Int32;
     use polars::prelude::NamedFrom;
     use polars::series::Series;
     use pretty_assertions::{assert_eq, assert_ne};
-    use std::fs;
-    use std::fs::File;
-    use std::path::PathBuf;
     use tempfile::tempdir;
+
+    use gtfs_general::gtfs::gtfs::{ServiceRange, GTFS};
+    use utilities::testing::test_utils::{check_file_content, setup_temp_gtfs_data};
 
     #[test]
     fn test_get_filenames_success_folder_and_no_working_directory() {
@@ -587,6 +590,7 @@ mod tests {
             }
         }
     }
+
     #[test]
     fn test_empty_file_header() {
         // Arrange
@@ -841,5 +845,68 @@ mod tests {
         //         assert_eq!(line, "service_id,exception_type,date");
         //     }
         // }
+    }
+
+    #[test]
+    fn test_extract_by_date_range() {
+        // Arrange
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let temp_working_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+        let gtfs = GTFS::new(
+            temp_folder.path().to_path_buf().clone(),
+            temp_working_directory.path().to_path_buf().clone(),
+        );
+        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
+        let gtfs = gtfs.unwrap();
+        let start_date = "2022-10-02";
+        let end_date = "2022-10-03";
+
+        // Act
+        let result = gtfs.extract_by_date(
+            &start_date,
+            &end_date,
+            &temp_working_directory.path().to_path_buf().clone(),
+        );
+
+        // Assert
+        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+        let result = result.unwrap();
+
+        // Assert that calendar file exists and has the expected content
+        let calendar_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "calendar.txt")
+            .expect("Failed to find calendar.txt");
+        let mut expected_lines = HashMap::new();
+        expected_lines.insert(0, "monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date,service_id");
+        expected_lines.insert(1, "1,0,0,0,0,0,1,20221002,20221003,46");
+
+        check_file_content(calendar_file, expected_lines, 2);
+
+        // Check Calendar Dates file exists and has the expected content
+        let calendar_dates_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "calendar_dates.txt")
+            .expect("Failed to find calendar_dates.txt");
+        expected_lines = HashMap::new();
+        expected_lines.insert(0, "service_id,exception_type,date");
+        expected_lines.insert(1, "55,1,20221003");
+        expected_lines.insert(2, "57,1,20221002");
+
+        check_file_content(calendar_dates_file, expected_lines, 3);
+
+        // Check trips file exists and has the expected content
+        let trips_file = result
+            .iter()
+            .find(|f| f.file_name().unwrap().to_str().unwrap() == "trips.txt")
+            .expect("Failed to find trips.txt");
+        expected_lines = HashMap::new();
+        expected_lines.insert(0, "route_id,service_id,direction_id,trip_id,shape_id");
+        expected_lines.insert(1, "1,55,0,1581,");
+        expected_lines.insert(2, "1,55,0,2217,");
+        expected_lines.insert(539, "97,46,0,2690,");
+
+        check_file_content(trips_file, expected_lines, 540);
     }
 }

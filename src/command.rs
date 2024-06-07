@@ -1,13 +1,16 @@
-use crate::command::Command::ExtractDate;
-use crate::gtfs::gtfs::GTFS;
+use std::error::Error;
+use std::fmt;
+use std::path::PathBuf;
+
 use clap::{Args, Parser, Subcommand};
 use log::{error, info};
 use polars::prelude::DataType;
 use serde::Serialize;
-use std::error::Error;
-use std::fmt;
-use std::path::PathBuf;
+
 use Command::Metadata;
+
+use crate::command::Command::ExtractDate;
+use crate::gtfs::gtfs::GTFS;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -152,55 +155,7 @@ impl App {
                     self.global_opts.input_data.clone(),
                     self.global_opts.working_directory.clone(),
                 )?;
-                // Get calendar file
-                let calendar_file = gtfs.get_file("calendar.txt")?;
-                let calendar_dates_file = gtfs.get_file("calendar_dates.txt")?;
-                let trips_file = gtfs.get_file("trips.txt")?;
-
-                let filtered_calendar_file = gtfs.filter_file_by_dates(
-                    &calendar_file,
-                    output_folder,
-                    start_date,
-                    end_date,
-                    "start_date",
-                    "end_date",
-                )?;
-                let filtered_calendar_dates_file = gtfs.filter_file_by_dates(
-                    &calendar_dates_file,
-                    output_folder,
-                    start_date,
-                    end_date,
-                    "date",
-                    "date",
-                )?;
-                let mut service_ids_to_keep = gtfs.get_column(
-                    filtered_calendar_file.clone(),
-                    "service_id",
-                    DataType::Int64,
-                )?;
-                let service_ids_to_keep = service_ids_to_keep.append(&gtfs.get_column(
-                    filtered_calendar_dates_file.clone(),
-                    "service_id",
-                    DataType::Int64,
-                )?)?;
-                let filtered_trips_file = gtfs.filter_file_by_values(
-                    &trips_file,
-                    output_folder,
-                    vec!["service_id"],
-                    vec![DataType::Int64],
-                    service_ids_to_keep,
-                )?;
-                let route_trip_shape_ids_to_keep = gtfs.get_columns(
-                    filtered_trips_file.clone(),
-                    vec!["route_id", "trip_id", "shape_id"],
-                    vec![DataType::Int64, DataType::Int64, DataType::Int64],
-                )?;
-                let mut processed_common_files =
-                    gtfs.process_common_files(output_folder, &route_trip_shape_ids_to_keep)?;
-                processed_files.push(filtered_calendar_file);
-                processed_files.push(filtered_calendar_dates_file);
-                processed_files.push(filtered_trips_file);
-                processed_files.append(&mut processed_common_files);
+                processed_files = gtfs.extract_by_date(start_date, end_date, output_folder)?;
             }
             _ => {
                 error!("Command not implemented yet");

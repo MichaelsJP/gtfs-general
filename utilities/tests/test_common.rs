@@ -1,7 +1,11 @@
 #[cfg(test)]
 mod tests {
     use std::io::Write;
+
     use zip::write::SimpleFileOptions;
+
+    use utilities::common::file_module;
+    use utilities::common::unzip_module;
 
     #[test]
     fn test_unzip_files() {
@@ -19,8 +23,7 @@ mod tests {
         zip.finish().unwrap();
 
         // Unzip the file
-        let files =
-            gtfs_general::common::unzip_module::unzip_files(zip_file, temp_dir.path()).unwrap();
+        let files = unzip_module::unzip_files(zip_file, temp_dir.path()).unwrap();
         // Assert that the file was extracted
         assert_eq!(files.len(), 2);
         assert_eq!(files[0].file_name().unwrap(), "test1.txt");
@@ -48,7 +51,7 @@ mod tests {
 
         // Ensure the header of the file
         let output_file_ensure_header =
-            gtfs_general::common::file_module::ensure_header(&original_file, &output_file).unwrap();
+            file_module::ensure_header(&original_file, &output_file).unwrap();
         // Assert that the output_file_ensure_header is the same as the output_file
         assert_eq!(output_file_ensure_header, output_file);
         // Assert that the output_file_ensure_header contains the header
@@ -76,7 +79,7 @@ mod tests {
 
         // Ensure the header of the file
         let output_file_ensure_header =
-            gtfs_general::common::file_module::ensure_header(&original_file, &output_file).unwrap();
+            file_module::ensure_header(&original_file, &output_file).unwrap();
         // Assert that the output_file_ensure_header is the same as the output_file
         assert_eq!(output_file_ensure_header, output_file);
         // Assert that the output_file_ensure_header contains the unchanged header

@@ -1,10 +1,12 @@
-use log::warn;
 use std::error::Error;
 use std::fs::{create_dir_all, File};
 use std::io::copy;
 use std::path::{Path, PathBuf};
+
+use log::warn;
 use zip::read::{ZipArchive, ZipFile};
 
+#[cfg(feature = "default")]
 pub fn unzip_files(zip_path: PathBuf, extract_to: &Path) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let zip_file = File::open(&zip_path)?;
     let mut archive = ZipArchive::new(zip_file)?;
@@ -22,6 +24,7 @@ pub fn unzip_files(zip_path: PathBuf, extract_to: &Path) -> Result<Vec<PathBuf>,
     Ok(files)
 }
 
+#[cfg(feature = "default")]
 pub fn unzip_file(mut file: ZipFile, extract_to: &Path) -> Result<PathBuf, Box<dyn Error>> {
     let file_name = file.name().to_string();
     let extract_path = extract_to.join(&file_name);

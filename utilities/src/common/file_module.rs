@@ -1,8 +1,9 @@
-use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader, SerWriter};
 use std::fs::File;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-// Write a function that takes an input file and output file path as an input and returns a Result<()>.
+use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader, SerWriter};
+
+#[cfg(feature = "default")]
 pub fn ensure_header(
     original_file: &PathBuf,
     output_file: &PathBuf,

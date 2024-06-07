@@ -12,9 +12,9 @@ mod tests {
     use rstest::fixture;
     use tempfile::tempdir;
 
-    use gtfs_general::command::{App, LogLevel};
     use gtfs_general::command::Command::{ExtractBbox, ExtractDate};
-    use gtfs_general::common::test_utils::setup_temp_gtfs_data;
+    use gtfs_general::command::{App, LogLevel};
+    use utilities::testing::test_utils::setup_temp_gtfs_data;
 
     use super::*;
 
@@ -152,12 +152,18 @@ mod tests {
     }
 
     #[rstest::rstest(
-    args,
-    bbox,
-    expected_bbox,
-    case::test1(default_args(), vec_of_strings ! ["extract-bbox", "--bbox", "1.0", "2.0", "3.0", "4.0"], vec ! [1.0, 2.0, 3.0, 4.0]),
-    case::test2(default_args(), vec_of_strings ! ["extract-bbox", "--bbox", "4.0", "3.0", "2.0", "1.0"], vec ! [4.0, 3.0, 2.0, 1.0]),
-    case::test3(default_args(), vec_of_strings ! ["extract-bbox", "--bbox", "1.2", "2.3", "3.4", "4.5"], vec ! [1.2, 2.3, 3.4, 4.5]),
+        args,
+        bbox,
+        expected_bbox,
+        case::test1(
+            default_args(), vec_of_strings ! ["extract-bbox", "--bbox", "1.0", "2.0", "3.0", "4.0"], vec ! [1.0, 2.0, 3.0, 4.0]
+        ),
+        case::test2(
+            default_args(), vec_of_strings ! ["extract-bbox", "--bbox", "4.0", "3.0", "2.0", "1.0"], vec ! [4.0, 3.0, 2.0, 1.0]
+        ),
+        case::test3(
+            default_args(), vec_of_strings ! ["extract-bbox", "--bbox", "1.2", "2.3", "3.4", "4.5"], vec ! [1.2, 2.3, 3.4, 4.5]
+        ),
     )]
     fn test_subcommand_extract_bbox(args: Vec<String>, bbox: Vec<String>, expected_bbox: Vec<f64>) {
         let mut args = args;
@@ -174,11 +180,13 @@ mod tests {
     }
 
     #[rstest::rstest(
-    args,
-    date_query,
-    expected_start_date,
-    expected_end_date,
-    case::test1(default_args(), vec_of_strings ! ["extract-date", "--start-date", "2020-01-01", "--end-date", "2020-01-31"], "2020-01-01", "2020-01-31"),
+        args,
+        date_query,
+        expected_start_date,
+        expected_end_date,
+        case::test1(
+            default_args(), vec_of_strings ! ["extract-date", "--start-date", "2020-01-01", "--end-date", "2020-01-31"], "2020-01-01", "2020-01-31"
+        ),
     )]
     fn test_subcommand_extract_date(
         args: Vec<String>,
