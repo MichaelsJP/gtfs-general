@@ -14,6 +14,7 @@ mod tests {
     use tempfile::tempdir;
 
     use gtfs_general::gtfs::gtfs::{ServiceRange, GTFS};
+    use utilities::common::filter_module::filter_file_by_values;
     use utilities::testing::environment_module::{
         check_file_content, get_gtfs_test_data_path, setup_temp_gtfs_data,
     };
@@ -338,121 +339,6 @@ mod tests {
     }
 
     #[test]
-    fn test_filter_file_by_values_that_doesnt_exist() {
-        // Arrange
-        let temp_folder = tempdir().expect("Failed to create temp folder");
-        let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(
-            temp_folder.path().to_path_buf().clone(),
-            temp_working_directory.path().to_path_buf().clone(),
-        );
-        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
-        let gtfs = gtfs.unwrap();
-
-        // Act
-        let allowed: Series = [1, 2].iter().collect();
-        // Create face pathbuf
-        let fake_path = PathBuf::from("fake_path");
-        let result = gtfs.filter_file_by_values(
-            &fake_path,
-            &temp_working_directory.path().to_path_buf(),
-            vec!["service_id"],
-            vec![Int32],
-            &allowed,
-        );
-        // Assert error
-        assert!(result.is_err(), "Expected Err, got Ok");
-    }
-
-    #[test]
-    fn test_filter_file_by_values_with_single_column_name() {
-        // Arrange
-        let temp_folder = tempdir().expect("Failed to create temp folder");
-        let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(
-            temp_folder.path().to_path_buf().clone(),
-            temp_working_directory.path().to_path_buf().clone(),
-        );
-        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
-        let gtfs = gtfs.unwrap();
-
-        // Act
-        let allowed: Series = [68, 76].iter().collect();
-        let trips_file = gtfs.get_file("trips.txt").expect("Failed to get file");
-        let result = gtfs.filter_file_by_values(
-            &trips_file,
-            &temp_working_directory.path().to_path_buf(),
-            vec!["service_id"],
-            vec![Int32],
-            &allowed,
-        );
-
-        // Assert
-        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
-        let result = result.unwrap();
-        // Check if the file exists
-        assert!(result.is_file());
-
-        let file_content = fs::read_to_string(result).expect("Failed to read file");
-        // Assert length
-        assert_eq!(file_content.lines().count(), 35);
-        assert!(file_content.contains("route_id,service_id,direction_id,trip_id,shape_id"));
-        assert!(file_content.contains("2,76,0,2564,"));
-        assert!(file_content.contains("29,68,0,1980,"));
-    }
-
-    #[test]
-    fn test_filter_file_by_values_with_multiple_column_name() {
-        // Arrange
-        let temp_folder = tempdir().expect("Failed to create temp folder");
-        let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
-        let gtfs = GTFS::new(
-            temp_folder.path().to_path_buf().clone(),
-            temp_working_directory.path().to_path_buf().clone(),
-        );
-        assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
-        let gtfs = gtfs.unwrap();
-
-        // Act
-        let allowed: Series = [9, 68].iter().collect();
-        let trips_file = gtfs.get_file("trips.txt").expect("Failed to get file");
-        let result = gtfs.filter_file_by_values(
-            &trips_file,
-            &temp_working_directory.path().to_path_buf(),
-            vec!["service_id", "route_id"],
-            vec![Int32, Int32],
-            &allowed,
-        );
-
-        // Assert
-        assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
-        let result = result.unwrap();
-        // Check if the file exists
-        assert!(result.is_file());
-
-        let file_content = fs::read_to_string(result).expect("Failed to read file");
-        // Check trips.txt
-        let max_line_number = file_content.lines().count();
-        for line_number in 0..max_line_number {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            match line_number {
-                0 => assert_eq!(line, "route_id,service_id,direction_id,trip_id,shape_id"),
-                1 => assert_eq!(line, "9,68,0,1136,"),
-                2 => assert_eq!(line, "9,68,0,114,"),
-                3 => assert_eq!(line, "9,68,0,1855,"),
-                4 => assert_eq!(line, "9,68,0,2539,"),
-                _ => panic!("Unexpected line: {}", line),
-            }
-        }
-    }
-
-    #[test]
     fn test_get_column() {
         // Arrange
         let temp_folder = tempdir().expect("Failed to create temp folder");
@@ -538,7 +424,7 @@ mod tests {
         let shapes_file = gtfs.get_file("shapes.txt").expect("Failed to get file");
 
         // Filter files
-        let filtered_routes_file = gtfs.filter_file_by_values(
+        let filtered_routes_file = filter_file_by_values(
             &routes_file,
             &temp_working_directory.path().to_path_buf(),
             vec!["route_id"],

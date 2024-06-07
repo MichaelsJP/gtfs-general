@@ -16,6 +16,6 @@ polars = { version = "0.40.0", features = ["lazy", "csv", "strings"] }
 [features]
 default = ["filter", "zip", "file"]
 testing = ["default"]
-filter = ["polars/polars-lazy", "file", "polars/streaming"]
+filter = ["polars/polars-lazy", "file", "polars/streaming", "polars/is_in"]
 zip = []
 file = ["polars/polars-lazy", "polars/csv"]

@@ -4,9 +4,10 @@ use std::path::PathBuf;
 
 use polars::datatypes::DataType;
 use polars::export::chrono::NaiveDate;
-use polars::prelude::{all, col, CsvWriterOptions, Expr, LazyCsvReader, LazyFileListReader, lit, SerializeOptions, StrptimeOptions};
+use polars::prelude::{all, col, CsvWriterOptions, Expr, LazyCsvReader, LazyFileListReader, lit, SerializeOptions, Series, StrptimeOptions};
 
 use crate::common::file_module;
+use crate::common::file_module::ensure_header;
 
 #[cfg(feature = "filter")]
 pub fn filter_file_by_dates(
@@ -76,4 +77,47 @@ pub fn filter_file_by_dates(
         .sink_csv(output_file.clone(), csv_writer_options)?;
     file_module::ensure_header(&file_name, &output_file)?;
     Ok(output_file)
+}
+
+pub fn filter_file_by_values(
+    file: &PathBuf,
+    output_folder: &PathBuf,
+    column_names: Vec<&str>,
+    data_types: Vec<DataType>,
+    allowed_values: &Series,
+) -> Result<PathBuf, Box<dyn Error>> {
+    // If file doesn't exist return Err
+    if !file.exists() {
+        return Err(format!("File does not exist: {:?}", file))?;
+    }
+    let output_file = output_folder.join(file.file_name().unwrap());
+    let allowed = allowed_values.cast(&DataType::Int64).unwrap();
+    let mut columns = Vec::new();
+    let mut filter: Expr = Default::default();
+
+    // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
+    for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
+        let column = col(column_name).cast(data_type.clone());
+        columns.push(column.clone());
+        if column_name != &column_names[0] {
+            filter = filter.and(column.is_in(lit(allowed.clone())));
+        } else {
+            filter = column.is_in(lit(allowed.clone()));
+        };
+    }
+    let mut csv_writer_options = CsvWriterOptions {
+        include_bom: false,
+        include_header: true,
+        batch_size: NonZeroUsize::new(10000).unwrap(),
+        maintain_order: true,
+        ..Default::default()
+    };
+    LazyCsvReader::new(file)
+        .with_has_header(true)
+        .finish()?
+        .filter(filter)
+        .with_streaming(true)
+        .sink_csv(output_file.clone(), csv_writer_options.clone())?;
+    // Return path
+    Ok(ensure_header(&file, &output_file)?)
 }

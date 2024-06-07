@@ -14,7 +14,7 @@ use polars::prelude::*;
 
 use utilities::common::file_module;
 use utilities::common::file_module::ensure_header;
-use utilities::common::filter_module::filter_file_by_dates;
+use utilities::common::filter_module::{filter_file_by_dates, filter_file_by_values};
 use utilities::common::zip_module::unzip_file;
 
 pub struct ServiceRange {
@@ -363,50 +363,6 @@ impl GTFS {
         Ok(df)
     }
 
-    pub fn filter_file_by_values(
-        &self,
-        file: &PathBuf,
-        output_folder: &PathBuf,
-        column_names: Vec<&str>,
-        data_types: Vec<DataType>,
-        allowed_values: &Series,
-    ) -> Result<PathBuf, Box<dyn Error>> {
-        // If file doesn't exist return Err
-        if !file.exists() {
-            return Err(format!("File does not exist: {:?}", file))?;
-        }
-        let output_file = output_folder.join(file.file_name().unwrap());
-        let allowed = allowed_values.cast(&DataType::Int64).unwrap();
-        let mut columns = Vec::new();
-        let mut filter: Expr = Default::default();
-
-        // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
-        for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
-            let column = col(column_name).cast(data_type.clone());
-            columns.push(column.clone());
-            if column_name != &column_names[0] {
-                filter = filter.and(column.is_in(lit(allowed.clone())));
-            } else {
-                filter = column.is_in(lit(allowed.clone()));
-            };
-        }
-        let mut csv_writer_options = CsvWriterOptions {
-            include_bom: false,
-            include_header: true,
-            batch_size: NonZeroUsize::new(10000).unwrap(),
-            maintain_order: true,
-            ..Default::default()
-        };
-        LazyCsvReader::new(file)
-            .with_has_header(true)
-            .finish()?
-            .filter(filter)
-            .with_streaming(true)
-            .sink_csv(output_file.clone(), csv_writer_options.clone())?;
-        // Return path
-        Ok(ensure_header(&file, &output_file)?)
-    }
-
     pub fn process_common_files(
         &self,
         output_folder: &PathBuf,
@@ -428,7 +384,7 @@ impl GTFS {
         let mut file_paths: Vec<PathBuf> = vec![];
 
         // Filter files
-        let filtered_routes_file = self.filter_file_by_values(
+        let filtered_routes_file = filter_file_by_values(
             &routes_file,
             output_folder,
             vec!["route_id"],
@@ -436,7 +392,7 @@ impl GTFS {
             route_trip_shape_ids_to_keep.column("route_id")?,
         )?;
         file_paths.push(filtered_routes_file.clone());
-        let filtered_shapes_file = self.filter_file_by_values(
+        let filtered_shapes_file = filter_file_by_values(
             &shapes_file,
             output_folder,
             vec!["shape_id"],
@@ -444,7 +400,7 @@ impl GTFS {
             route_trip_shape_ids_to_keep.column("shape_id")?,
         )?;
         file_paths.push(filtered_shapes_file);
-        let filtered_stop_times_file = self.filter_file_by_values(
+        let filtered_stop_times_file = filter_file_by_values(
             &stop_times_file,
             output_folder,
             vec!["trip_id"],
@@ -455,7 +411,7 @@ impl GTFS {
 
         let agency_ids_to_keep =
             self.get_column(filtered_routes_file.clone(), "agency_id", DataType::Int64)?;
-        let filtered_agency_file = self.filter_file_by_values(
+        let filtered_agency_file = filter_file_by_values(
             &agency_file,
             output_folder,
             vec!["agency_id"],
@@ -467,7 +423,7 @@ impl GTFS {
         // Filter stops file by stop_ids_to_keep
         let stop_ids_to_keep =
             self.get_column(filtered_stop_times_file, "stop_id", DataType::Int64)?;
-        let filtered_stops_file = self.filter_file_by_values(
+        let filtered_stops_file = filter_file_by_values(
             &stops_file,
             output_folder,
             vec!["stop_id"],
@@ -479,7 +435,7 @@ impl GTFS {
         // Filter conditional files
         if frequencies_file.exists() {
             // Frequencies is an optional file
-            self.filter_file_by_values(
+            filter_file_by_values(
                 &frequencies_file,
                 output_folder,
                 vec!["trip_id"],
@@ -492,7 +448,7 @@ impl GTFS {
         }
         // Filter transfers file by stop_ids_to_keep the file is optional
         if transfers_file.exists() {
-            self.filter_file_by_values(
+            filter_file_by_values(
                 &transfers_file,
                 output_folder,
                 vec!["from_stop_id", "to_stop_id"],
@@ -556,7 +512,7 @@ impl GTFS {
             "service_id",
             DataType::Int64,
         )?)?;
-        let filtered_trips_file = self.filter_file_by_values(
+        let filtered_trips_file = filter_file_by_values(
             &trips_file,
             output_folder,
             vec!["service_id"],
