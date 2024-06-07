@@ -1,18 +1,23 @@
-FROM python:3.11-buster as builder
+FROM rust:1.78.0-slim AS chef
 
-RUN apt-get update && \
-    apt-get install --no-install-suggests --no-install-recommends --yes pipx python3-venv
-ENV PATH="/root/.local/bin:${PATH}"
+RUN cargo install cargo-chef
 
-RUN pipx install poetry
-RUN pipx inject poetry poetry-plugin-bundle
+WORKDIR /usr/src/gtfs-general
 
+FROM chef AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS builder
+COPY --from=planner /usr/src/gtfs-general/recipe.json recipe.json
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --recipe-path recipe.json
+# Build application
+COPY . .
+RUN cargo build --release --bin gtfs-general
+
+# We do not need the Rust toolchain to run the binary!
+FROM debian:bookworm-slim AS runtime
 WORKDIR /app
-
-COPY ./ ./
-
-RUN poetry bundle venv --python=/usr/local/bin/python --only=main /venv
-
-WORKDIR /work
-
-ENTRYPOINT ["/venv/bin/gtfs-general"]
+COPY --from=builder /usr/src/gtfs-general/target/release/gtfs-general /usr/local/bin
+ENTRYPOINT ["/usr/local/bin/gtfs-general"]
