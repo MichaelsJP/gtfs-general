@@ -4,11 +4,6 @@ version = "0.2.0"
 edition = "2021"
 authors = ["Julian Psotta <julianpsotta@gmail.com>"]
 
-[lib]
-name = "gtfs_general"
-path = "src/lib.rs"
-crate-type = ["rlib"]
-
 [dependencies]
 clap = { version = "4.4.12", features = ["derive"] }
 polars = { version = "0.40.0", features = ["lazy", "streaming", "strings", "dtype-date", "timezones", "csv", "is_in"] }
