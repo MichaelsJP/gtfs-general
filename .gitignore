@@ -135,3 +135,6 @@ dmypy.json
 /src/gtfs_general/extractor/filters.py
 /output/
 /input/
+
+# Local rust configs
+.cargo/**
