@@ -1,18 +1,22 @@
-use clap::Parser;
 use std::path::PathBuf;
+
+use clap::Parser;
+
 macro_rules! vec_of_strings {
     ($($x:expr),*) => (vec![$($x.to_string()),*]);
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use gtfs_general::command::Command::{ExtractBbox, ExtractDate};
-    use gtfs_general::command::{App, LogLevel};
-    use gtfs_general::common::test_utils::setup_temp_gtfs_data;
     use pretty_assertions::assert_eq;
     use rstest::fixture;
     use tempfile::tempdir;
+
+    use gtfs_general::command::{App, LogLevel};
+    use gtfs_general::command::Command::{ExtractBbox, ExtractDate};
+    use gtfs_general::common::test_utils::setup_temp_gtfs_data;
+
+    use super::*;
 
     // Create a fixture that returns a vector with default args ["test", "--input-data", "path/to/data"]
     #[fixture]
@@ -201,8 +205,8 @@ mod tests {
         assert_eq!(
             app.command,
             ExtractDate {
-                start_date: "2020-01-01".to_string(),
-                end_date: "2020-01-31".to_string(),
+                start_date: expected_start_date.to_string(),
+                end_date: expected_end_date.to_string(),
                 output_folder: PathBuf::from(output_directory.path().to_str().unwrap()),
             }
         );
