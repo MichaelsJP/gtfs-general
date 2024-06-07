@@ -4,12 +4,11 @@ use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand};
 use log::{error, info};
-use polars::prelude::DataType;
 use serde::Serialize;
 
 use Command::Metadata;
 
-use crate::command::Command::{ExtractBbox, ExtractDate};
+use crate::command::Command::ExtractDate;
 use crate::gtfs::gtfs::GTFS;
 
 #[derive(Parser, Debug)]
@@ -177,10 +176,8 @@ mod tests {
 
     use utilities::testing::environment_module::setup_temp_gtfs_data;
 
-    use crate::command::Command::{ExtractBbox, ExtractDate};
     use crate::command::{App, LogLevel};
-
-    use super::*;
+    use crate::command::Command::{ExtractBbox, ExtractDate};
 
     macro_rules! vec_of_strings {
     ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -213,7 +210,7 @@ mod tests {
                 ][..],
                 &vec![String::from("metadata")],
             ]
-            .concat(),
+                .concat(),
         );
         assert_eq!(app.global_opts.level, LogLevel::Info);
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/short"));
@@ -232,7 +229,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-            .concat(),
+                .concat(),
         );
         assert_eq!(
             app.global_opts.working_directory,
@@ -248,7 +245,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-            .concat(),
+                .concat(),
         );
         assert_eq!(
             app.global_opts.working_directory,
@@ -275,7 +272,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-            .concat(),
+                .concat(),
         );
         // Assert that the log level is info
         assert_eq!(app.global_opts.level, log_level);
@@ -383,5 +380,6 @@ mod tests {
             }
         );
         let result = app.exec().expect("Failed to execute extract-date command");
+        assert_eq!(result.len(), 9);
     }
 }

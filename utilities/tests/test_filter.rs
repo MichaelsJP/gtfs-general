@@ -75,7 +75,6 @@ mod tests {
     #[test]
     fn test_filter_file_by_values_when_the_file_doesnt_exist() {
         // Arrange
-        let temp_folder = tempdir().expect("Failed to create temp folder");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
 
         // Act

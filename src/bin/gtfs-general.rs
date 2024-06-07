@@ -1,7 +1,9 @@
-use clap::Parser;
-use gtfs_general::command::{App, LogLevel};
-use log::{error, info};
 use std::time::Instant;
+
+use clap::Parser;
+use log::{error, info};
+
+use gtfs_general::command::{App, LogLevel};
 
 fn init_logger(log_level: LogLevel) {
     env_logger::builder()
@@ -31,7 +33,7 @@ fn main() {
     // Output the command line arguments
     info!("Command line arguments: {}", app);
     // Execute the command
-    let processed_files = app.exec().unwrap_or_else(|e| {
+    app.exec().unwrap_or_else(|e| {
         error!("Error executing command: {}", e);
         vec![]
     });

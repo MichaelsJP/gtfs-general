@@ -15,7 +15,7 @@ pub fn setup_temp_gtfs_data(temporary_folder: &tempfile::TempDir) -> Result<Vec<
 }
 
 pub fn check_file_content(
-    file: &std::path::PathBuf,
+    file: &PathBuf,
     expected_lines: std::collections::HashMap<usize, &str>,
     expected_size: usize,
 ) {

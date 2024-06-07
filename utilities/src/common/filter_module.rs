@@ -49,7 +49,7 @@ pub mod filter_by {
                 filter = column.is_in(lit(allowed.clone()));
             };
         }
-        let mut csv_writer_options = CsvWriterOptions {
+        let csv_writer_options = CsvWriterOptions {
             include_bom: false,
             include_header: true,
             batch_size: NonZeroUsize::new(10000).unwrap(),

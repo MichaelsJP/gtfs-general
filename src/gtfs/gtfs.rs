@@ -3,17 +3,12 @@ extern crate utilities;
 use std::error::Error;
 use std::fmt;
 use std::fs;
-use std::fs::File;
-use std::num::{NonZeroU8, NonZeroUsize};
 use std::path::PathBuf;
 
 use ::zip::ZipArchive;
 use log::{debug, error, info};
-use polars::export::chrono::NaiveDate;
 use polars::prelude::*;
 
-use utilities::common::file_module;
-use utilities::common::file_module::ensure_header;
 use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values};
 use utilities::common::filter_module::filter_column::{get_column, get_columns};
 use utilities::common::zip_module::unzip_file;
@@ -571,7 +566,7 @@ mod tests {
         check_file_content, get_gtfs_test_data_path, setup_temp_gtfs_data,
     };
 
-    use crate::gtfs::gtfs::{ServiceRange, GTFS};
+    use crate::gtfs::gtfs::{GTFS, ServiceRange};
 
     #[test]
     fn test_is_valid() {
@@ -581,7 +576,7 @@ mod tests {
             temp_folder.path().to_path_buf(),
             temp_folder.path().to_path_buf(),
         )
-        .expect("Failed to create GTFS object");
+            .expect("Failed to create GTFS object");
         gtfs.is_valid().expect("Failed to validate GTFS data");
     }
 
@@ -594,7 +589,7 @@ mod tests {
             temp_folder.path().to_path_buf(),
             temp_folder.path().to_path_buf(),
         )
-        .expect("Failed to create GTFS object");
+            .expect("Failed to create GTFS object");
 
         // Act
         let result = gtfs.get_filenames();
@@ -623,7 +618,7 @@ mod tests {
             temp_folder.path().to_path_buf(),
             temp_folder.path().to_path_buf(),
         )
-        .expect("Failed to create GTFS object");
+            .expect("Failed to create GTFS object");
 
         // Act
         let result = gtfs.get_file("agency.txt");
@@ -673,11 +668,6 @@ mod tests {
         let gtfs = gtfs.unwrap();
 
         // Create dataframe with the below data
-        // route_id,service_id,direction_id,trip_id,shape_id
-        // 9,68,0,1136,
-        // 9,68,0,114,
-        // 9,68,0,1855,
-        // 9,68,0,2539,
         let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
             Series::new("route_id", [9, 9, 9, 9]),
             Series::new("service_id", [68, 68, 68, 68]),
@@ -685,7 +675,7 @@ mod tests {
             Series::new("trip_id", [1136, 114, 1855, 2539]),
             Series::new("shape_id", ["10001", "10001", "", ""]),
         ])
-        .expect("Failed to create dataframe");
+            .expect("Failed to create dataframe");
         let result = gtfs
             .process_common_files(
                 &temp_working_directory.path().to_path_buf(),
@@ -704,144 +694,57 @@ mod tests {
             .iter()
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "routes.txt")
             .expect("Failed to find routes.txt");
-        let file_content = fs::read_to_string(routes_file).expect("Failed to read file");
-        for line_number in 0..file_content.lines().count() {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            match line_number {
-                0 => pretty_assertions::assert_eq!(
-                    line,
-                    "route_long_name,route_short_name,agency_id,route_type,route_id"
-                ),
-                1 => pretty_assertions::assert_eq!(line, "Intercity-Express,ICE 79,6,2,9"),
-                _ => panic!("Unexpected line: {}", line),
-            }
-        }
+        let mut expected_lines = HashMap::new();
+        expected_lines.insert(0, "route_long_name,route_short_name,agency_id,route_type,route_id");
+        expected_lines.insert(1, "Intercity-Express,ICE 79,6,2,9");
+        check_file_content(routes_file, expected_lines, 2);
+
+
         // check agency.txt
-        // agency_id,agency_name,agency_url,agency_timezone,agency_lang
-        // 6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de
         let agency_file = result
             .iter()
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "agency.txt")
             .expect("Failed to find agency.txt");
-        let file_content = fs::read_to_string(agency_file).expect("Failed to read file");
-        for line_number in 0..file_content.lines().count() {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            match line_number {
-                0 => pretty_assertions::assert_eq!(
-                    line,
-                    "agency_id,agency_name,agency_url,agency_timezone,agency_lang"
-                ),
-                1 => pretty_assertions::assert_eq!(
-                    line,
-                    "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de"
-                ),
-                _ => panic!("Unexpected line: {}", line),
-            }
-        }
+        expected_lines = HashMap::new();
+        expected_lines.insert(0, "agency_id,agency_name,agency_url,agency_timezone,agency_lang");
+        expected_lines.insert(1, "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de");
+
+        check_file_content(agency_file, expected_lines, 2);
+
         // check feed_info.txt
         let feed_info_file = result
             .iter()
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "feed_info.txt")
             .expect("Failed to find feed_info.txt");
-        let file_content = fs::read_to_string(feed_info_file).expect("Failed to read file");
-        // feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url
-        file_content.contains("feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url");
-        // check line two contains "gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V."
-        file_content
-            .contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.");
-        for line_number in 0..file_content.lines().count() {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            match line_number {
-                0 => pretty_assertions::assert_eq!(line, "feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url"),
-                1 => assert!(line.contains("gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.")),
-                _ => panic!("Unexpected line: {}", line),
-            }
-        }
+        expected_lines = HashMap::new();
+        expected_lines.insert(0, "feed_publisher_name,feed_publisher_url,feed_lang,feed_start_date,feed_end_date,feed_version,feed_contact_email,feed_contact_url");
+        expected_lines.insert(1, "\"gtfs.de - GTFS für Deutschland, Daten bereitgestellt von DELFI e.V.\",http://gtfs.de,de,20211213,20221210,light-2022-10-02,info@gtfs.de,http://gtfs.de/de/feeds");
+        check_file_content(feed_info_file, expected_lines, 2);
+
         // check stops.txt
-        // stop_name,stop_id,stop_lat,stop_lon
-        // Aachen Hbf,318,50.7678,6.091499
-        // last line Liège-Guillemins,915,50.62436,5.566483
         let stops_file = result
             .iter()
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "stops.txt")
             .expect("Failed to find stops.txt");
-        let file_content = fs::read_to_string(stops_file).expect("Failed to read file");
-        // Get max line number
-        let max_line_number = file_content.lines().count();
-        for line_number in 0..max_line_number {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            if line_number == 0 {
-                pretty_assertions::assert_eq!(line, "stop_name,stop_id,stop_lat,stop_lon");
-            } else if line_number == 1 {
-                pretty_assertions::assert_eq!(line, "Aachen Hbf,318,50.7678,6.091499");
-            } else if line_number == max_line_number - 1 {
-                pretty_assertions::assert_eq!(line, "Liège-Guillemins,915,50.62436,5.566483");
-            }
-        }
-        // Check stop_times.txt
-        // trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type
-        // 1136,18:25:00,18:25:00,1334,0,,
-        // last line 2539,22:13:00,22:13:00,1059,5,,
-        let stop_times_file = result
-            .iter()
-            .find(|f| f.file_name().unwrap().to_str().unwrap() == "stop_times.txt")
-            .expect("Failed to find stop_times.txt");
-        let file_content = fs::read_to_string(stop_times_file).expect("Failed to read file");
-        // Get max line number
-        let max_line_number = file_content.lines().count();
-        for line_number in 0..max_line_number {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            if line_number == 0 {
-                pretty_assertions::assert_eq!(line, "trip_id,arrival_time,departure_time,stop_id,stop_sequence,pickup_type,drop_off_type");
-            } else if line_number == 1 {
-                pretty_assertions::assert_eq!(line, "1136,18:25:00,18:25:00,1334,0,,");
-            } else if line_number == max_line_number - 1 {
-                pretty_assertions::assert_eq!(line, "2539,22:13:00,22:13:00,1059,5,,");
-            }
-        }
+        expected_lines = HashMap::new();
+        expected_lines.insert(0, "stop_name,stop_id,stop_lat,stop_lon");
+        expected_lines.insert(1, "Aachen Hbf,318,50.7678,6.091499");
+        expected_lines.insert(14, "Liège-Guillemins,915,50.62436,5.566483");
+        check_file_content(stops_file, expected_lines, 15);
+
 
         // Check shapes.txt
-        // shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence
         let shapes_file = result
             .iter()
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt")
             .expect("Failed to find shapes.txt");
-        let file_content = fs::read_to_string(shapes_file).expect("Failed to read file");
-        // Get max line number
-        let max_line_number = file_content.lines().count();
-        for line_number in 0..max_line_number {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            if line_number == 0 {
-                pretty_assertions::assert_eq!(
-                    line,
-                    "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"
-                );
-            } else if line_number == 1 {
-                pretty_assertions::assert_eq!(line, "10001,0,49.445,8.668,0.0");
-            } else if line_number == 2 {
-                pretty_assertions::assert_eq!(line, "10001,1,49.445,8.668,54.527");
-            } else if line_number == max_line_number - 1 {
-                pretty_assertions::assert_eq!(line, "10001,4,49.445,8.668,89.914");
-            }
-        }
+        expected_lines = HashMap::new();
+        expected_lines.insert(0, "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled");
+        expected_lines.insert(1, "10001,0,49.445,8.668,0.0");
+        expected_lines.insert(2, "10001,1,49.445,8.668,54.527");
+        expected_lines.insert(5, "10001,4,49.445,8.668,89.914");
+
+        check_file_content(shapes_file, expected_lines, 6);
     }
 
     #[test]
@@ -1219,10 +1122,9 @@ mod tests {
             Series::new("trip_id", [0]),
             Series::new("shape_id", [0]), // this causes an empty shapefile. We want to test for the header.
         ])
-        .expect("Failed to create dataframe");
+            .expect("Failed to create dataframe");
 
         let routes_file = gtfs.get_file("routes.txt").expect("Failed to get file");
-        let shapes_file = gtfs.get_file("shapes.txt").expect("Failed to get file");
 
         // Filter files
         let filtered_routes_file = filter_file_by_values(
@@ -1232,21 +1134,9 @@ mod tests {
             vec![DataType::Int64],
             route_trip_shape_ids_to_keep.column("route_id").unwrap(),
         );
-        let file_content =
-            fs::read_to_string(filtered_routes_file.unwrap()).expect("Failed to read file");
-        for line_number in 0..file_content.lines().count() {
-            let line = file_content
-                .lines()
-                .nth(line_number)
-                .expect("Failed to get line");
-            match line_number {
-                0 => pretty_assertions::assert_eq!(
-                    line,
-                    "route_long_name,route_short_name,agency_id,route_type,route_id"
-                ),
-                _ => panic!("Unexpected line: {}", line),
-            }
-        }
+        let mut expected_lines = HashMap::new();
+        expected_lines.insert(0, "route_long_name,route_short_name,agency_id,route_type,route_id");
+        check_file_content(&filtered_routes_file.unwrap(), expected_lines, 1);
     }
 
     #[test]
