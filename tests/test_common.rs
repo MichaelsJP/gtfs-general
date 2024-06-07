@@ -10,7 +10,8 @@ mod tests {
         // Create a zip file in the temp folder with one test file
         let zip_file = temp_dir.path().join("test.zip");
         let mut zip = zip::ZipWriter::new(std::fs::File::create(&zip_file).unwrap());
-        let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        let options =
+            SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
         zip.start_file("test1.txt", options).unwrap();
         zip.write_all(b"test1").unwrap();
         zip.start_file("test2.txt", options).unwrap();
@@ -46,11 +47,13 @@ mod tests {
         assert_eq!(output_file.metadata().unwrap().len(), 0);
 
         // Ensure the header of the file
-        let output_file_ensure_header = gtfs_general::common::file_module::ensure_header(&original_file, &output_file).unwrap();
+        let output_file_ensure_header =
+            gtfs_general::common::file_module::ensure_header(&original_file, &output_file).unwrap();
         // Assert that the output_file_ensure_header is the same as the output_file
         assert_eq!(output_file_ensure_header, output_file);
         // Assert that the output_file_ensure_header contains the header
-        let file_content_ensure_header = std::fs::read_to_string(&output_file_ensure_header).unwrap();
+        let file_content_ensure_header =
+            std::fs::read_to_string(&output_file_ensure_header).unwrap();
         assert_eq!(file_content_ensure_header, "column1,column2\n");
     }
 
@@ -72,11 +75,13 @@ mod tests {
         file.write_all(b"header2,header3\n").unwrap();
 
         // Ensure the header of the file
-        let output_file_ensure_header = gtfs_general::common::file_module::ensure_header(&original_file, &output_file).unwrap();
+        let output_file_ensure_header =
+            gtfs_general::common::file_module::ensure_header(&original_file, &output_file).unwrap();
         // Assert that the output_file_ensure_header is the same as the output_file
         assert_eq!(output_file_ensure_header, output_file);
         // Assert that the output_file_ensure_header contains the unchanged header
-        let file_content_ensure_header = std::fs::read_to_string(&output_file_ensure_header).unwrap();
+        let file_content_ensure_header =
+            std::fs::read_to_string(&output_file_ensure_header).unwrap();
         assert_eq!(file_content_ensure_header, "header2,header3\n");
     }
 }

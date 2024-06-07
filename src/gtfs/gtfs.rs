@@ -1,3 +1,4 @@
+use crate::common::file_module::ensure_header;
 use crate::common::unzip_module::unzip_file;
 use ::zip::ZipArchive;
 use log::{debug, error, info};
@@ -9,7 +10,6 @@ use std::fs;
 use std::fs::File;
 use std::num::{NonZeroU8, NonZeroUsize};
 use std::path::PathBuf;
-use crate::common::file_module::ensure_header;
 
 pub struct ServiceRange {
     pub start_date: String,
@@ -71,7 +71,10 @@ impl GTFS {
         } else if file_location.is_dir() {
             gtfs.working_directory = file_location.clone();
         } else {
-            error!("File is not pointing to an existing file or folder: {:?}", file_location);
+            error!(
+                "File is not pointing to an existing file or folder: {:?}",
+                file_location
+            );
         }
 
         // If th working directory does not exist, create it

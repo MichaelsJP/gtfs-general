@@ -2,6 +2,7 @@
 mod tests {
     use gtfs_general::common::test_utils::setup_temp_gtfs_data;
     use gtfs_general::gtfs::gtfs::{ServiceRange, GTFS};
+    use polars::datatypes::DataType;
     use polars::frame::DataFrame;
     use polars::prelude::DataType::Int32;
     use polars::prelude::NamedFrom;
@@ -10,7 +11,6 @@ mod tests {
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
-    use polars::datatypes::DataType;
     use tempfile::tempdir;
 
     #[test]
@@ -33,7 +33,10 @@ mod tests {
         // Check file location is the same as the temp_folder_valid
         assert_eq!(gtfs.file_location, temp_folder_valid.path().to_path_buf());
         // Check working directory is the same as the temp_working_directory
-        assert_eq!(gtfs.working_directory, temp_folder_valid.path().to_path_buf());
+        assert_eq!(
+            gtfs.working_directory,
+            temp_folder_valid.path().to_path_buf()
+        );
 
         let result = gtfs.get_filenames();
 
@@ -603,9 +606,8 @@ mod tests {
             Series::new("trip_id", [0]),
             Series::new("shape_id", [0]), // this causes an empty shapefile. We want to test for the header.
         ])
-            .expect("Failed to create dataframe");
-        
-        
+        .expect("Failed to create dataframe");
+
         let routes_file = gtfs.get_file("routes.txt").expect("Failed to get file");
         let shapes_file = gtfs.get_file("shapes.txt").expect("Failed to get file");
 
@@ -617,7 +619,8 @@ mod tests {
             vec![DataType::Int64],
             route_trip_shape_ids_to_keep.column("route_id").unwrap(),
         );
-        let file_content = fs::read_to_string(filtered_routes_file.unwrap()).expect("Failed to read file");
+        let file_content =
+            fs::read_to_string(filtered_routes_file.unwrap()).expect("Failed to read file");
         for line_number in 0..file_content.lines().count() {
             let line = file_content
                 .lines()

@@ -30,10 +30,7 @@ mod tests {
         let app = App::parse_from(&[&default_args[..], &vec![String::from("metadata")]].concat());
         assert_eq!(app.global_opts.level, LogLevel::Info);
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/data"));
-        assert_eq!(
-            app.global_opts.working_directory,
-            PathBuf::from("./")
-        );
+        assert_eq!(app.global_opts.working_directory, PathBuf::from("./"));
 
         // Test with short option for input-data and without default args
         let app = App::parse_from(
@@ -49,10 +46,7 @@ mod tests {
         );
         assert_eq!(app.global_opts.level, LogLevel::Info);
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/short"));
-        assert_eq!(
-            app.global_opts.working_directory,
-            PathBuf::from("./")
-        );
+        assert_eq!(app.global_opts.working_directory, PathBuf::from("./"));
     }
 
     #[rstest::rstest]
@@ -196,7 +190,7 @@ mod tests {
         let mut args = args;
         // replace input-data with gtfs_zip_path
         args[2] = temp_folder.path().to_str().unwrap().to_string();
-        
+
         args.extend(date_query);
         args.extend(vec![
             String::from("--output-folder"),
