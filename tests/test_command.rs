@@ -177,24 +177,31 @@ mod tests {
 
     #[rstest::rstest(
     args,
-    date,
+    date_query,
     expected_start_date,
     expected_end_date,
     case::test1(default_args(), vec_of_strings ! ["extract-date", "--start-date", "2020-01-01", "--end-date", "2020-01-31"], "2020-01-01", "2020-01-31"),
     )]
     fn test_subcommand_extract_date(
         args: Vec<String>,
-        date: Vec<String>,
+        date_query: Vec<String>,
         expected_start_date: String,
         expected_end_date: String,
     ) {
         // Arrange
-        let gtfs_zip_path = PathBuf::from("tests/files/ic_ice_gtfs_germany.zip");
-        let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        
+        let temp_folder = tempdir().expect("Failed to create temp folder");
+        let output_directory = tempdir().expect("Failed to create temp folder");
+        setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
+
         let mut args = args;
         // replace input-data with gtfs_zip_path
-        args[2] = gtfs_zip_path.to_str().unwrap().to_string();
+        args[2] = temp_folder.path().to_str().unwrap().to_string();
+        
+        args.extend(date_query);
+        args.extend(vec![
+            String::from("--output-folder"),
+            output_directory.path().to_str().unwrap().to_string(),
+        ]);
         let app = App::parse_from(args);
         // Assert that the subcommand is extract-date
         assert_eq!(
@@ -202,9 +209,9 @@ mod tests {
             ExtractDate {
                 start_date: "2020-01-01".to_string(),
                 end_date: "2020-01-31".to_string(),
-                output_folder: PathBuf::from("output"),
+                output_folder: PathBuf::from(output_directory.path().to_str().unwrap()),
             }
         );
-        // let result = app.exec().expect("Failed to execute extract-date command");
+        let result = app.exec().expect("Failed to execute extract-date command");
     }
 }

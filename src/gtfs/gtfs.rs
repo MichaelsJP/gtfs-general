@@ -7,7 +7,9 @@ use std::error::Error;
 use std::fmt;
 use std::fs;
 use std::fs::File;
+use std::num::{NonZeroU8, NonZeroUsize};
 use std::path::PathBuf;
+use crate::common::file_module::ensure_header;
 
 pub struct ServiceRange {
     pub start_date: String,
@@ -287,7 +289,7 @@ impl GTFS {
             .date();
         // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
         let lf = LazyCsvReader::new(calendar_file?)
-            .has_header(true)
+            .with_has_header(true)
             .finish()?
             .select(&[
                 start_date.clone().min(),
@@ -361,15 +363,15 @@ impl GTFS {
         let csv_writer_options = CsvWriterOptions {
             include_bom: false,
             include_header: true,
-            batch_size: 10000,
+            batch_size: NonZeroUsize::new(10000).unwrap(),
             maintain_order: true,
             serialize_options,
         };
 
         // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
         LazyCsvReader::new(file_name)
-            .has_header(true)
-            .low_memory(true)
+            .with_has_header(true)
+            .with_low_memory(true)
             .finish()?
             // Select all and cast the start date and end date to a date object
             .select(&[all()])
@@ -381,6 +383,7 @@ impl GTFS {
             )
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options)?;
+        ensure_header(&file_name, &output_file)?;
         Ok(output_file)
     }
 
@@ -409,13 +412,14 @@ impl GTFS {
             columns.push(col(column_name).cast(data_type.clone()));
         }
         // Create a lazy csv reader
-        let df = LazyCsvReader::new(file_path)
-            .low_memory(true)
-            .has_header(true)
+        let df = LazyCsvReader::new(file_path.clone())
+            .with_low_memory(true)
+            .with_has_header(true)
             .finish()?
             .select(columns)
             .with_streaming(true)
             .collect()?;
+        // TODO sink to temp csv file
         // Return column
         Ok(df)
     }
@@ -450,35 +454,18 @@ impl GTFS {
         let mut csv_writer_options = CsvWriterOptions {
             include_bom: false,
             include_header: true,
-            batch_size: 10000,
+            batch_size: NonZeroUsize::new(10000).unwrap(),
             maintain_order: true,
             ..Default::default()
         };
-
         LazyCsvReader::new(file)
-            .has_header(true)
+            .with_has_header(true)
             .finish()?
-            .with_columns(columns.clone())
             .filter(filter)
             .with_streaming(true)
             .sink_csv(output_file.clone(), csv_writer_options.clone())?;
-        // Check if file is empty
-        if output_file.metadata()?.len() == 0 {
-            // Get number of rows from file
-            let mut df = LazyCsvReader::new(file)
-                .has_header(true)
-                .with_n_rows(Some(0))
-                .finish()?
-                .collect()?;
-            // Write the headers to file
-            let mut output_file_ensured = File::create(&output_file)?;
-            CsvWriter::new(&mut output_file_ensured)
-                .include_header(true)
-                .finish(&mut df)
-                .unwrap();
-        }
         // Return path
-        Ok(output_file)
+        Ok(ensure_header(&file, &output_file)?)
     }
 
     pub fn process_common_files(

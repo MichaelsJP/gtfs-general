@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests {
     use std::io::Write;
+    use zip::write::SimpleFileOptions;
 
     #[test]
     fn test_unzip_files() {
@@ -9,8 +10,7 @@ mod tests {
         // Create a zip file in the temp folder with one test file
         let zip_file = temp_dir.path().join("test.zip");
         let mut zip = zip::ZipWriter::new(std::fs::File::create(&zip_file).unwrap());
-        let options =
-            zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Stored);
+        let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Stored);
         zip.start_file("test1.txt", options).unwrap();
         zip.write_all(b"test1").unwrap();
         zip.start_file("test2.txt", options).unwrap();

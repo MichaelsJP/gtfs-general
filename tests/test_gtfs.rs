@@ -10,6 +10,7 @@ mod tests {
     use std::fs;
     use std::fs::File;
     use std::path::PathBuf;
+    use polars::datatypes::DataType;
     use tempfile::tempdir;
 
     #[test]
@@ -595,38 +596,29 @@ mod tests {
         );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
-
-        // Create dataframe with the below data
-        // route_id,service_id,direction_id,trip_id,shape_id
-        // 9,68,0,1136,
-        // 9,68,0,114,
-        // 9,68,0,1855,
-        // 9,68,0,2539,
         let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
-            Series::new("route_id", [9, 9, 9, 9]),
-            Series::new("service_id", [68, 68, 68, 68]),
-            Series::new("direction_id", [0, 0, 0, 0]),
-            Series::new("trip_id", [1136, 114, 1855, 2539]),
-            Series::new("shape_id", ["", "", "", ""]), // this causes an empty shapefile. We want to test for the header.
+            Series::new("route_id", [0]),
+            Series::new("service_id", [0]),
+            Series::new("direction_id", [0]),
+            Series::new("trip_id", [0]),
+            Series::new("shape_id", [0]), // this causes an empty shapefile. We want to test for the header.
         ])
             .expect("Failed to create dataframe");
-        let result = gtfs
-            .process_common_files(
-                &temp_working_directory.path().to_path_buf(),
-                &route_trip_shape_ids_to_keep,
-            )
-            .expect("Failed to process common files");
+        
+        
+        let routes_file = gtfs.get_file("routes.txt").expect("Failed to get file");
+        let shapes_file = gtfs.get_file("shapes.txt").expect("Failed to get file");
 
-        // Check shapes.txt
-        // shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence
-        let shapes_file = result
-            .iter()
-            .find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt")
-            .expect("Failed to find shapes.txt");
-        let file_content = fs::read_to_string(shapes_file).expect("Failed to read file");
-        // Get max line number
-        let max_line_number = file_content.lines().count();
-        for line_number in 0..max_line_number {
+        // Filter files
+        let filtered_routes_file = gtfs.filter_file_by_values(
+            &routes_file,
+            &temp_working_directory.path().to_path_buf(),
+            vec!["route_id"],
+            vec![DataType::Int64],
+            route_trip_shape_ids_to_keep.column("route_id").unwrap(),
+        );
+        let file_content = fs::read_to_string(filtered_routes_file.unwrap()).expect("Failed to read file");
+        for line_number in 0..file_content.lines().count() {
             let line = file_content
                 .lines()
                 .nth(line_number)
@@ -634,12 +626,13 @@ mod tests {
             match line_number {
                 0 => assert_eq!(
                     line,
-                    "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled"
+                    "route_long_name,route_short_name,agency_id,route_type,route_id"
                 ),
                 _ => panic!("Unexpected line: {}", line),
             }
         }
     }
+
     #[test]
     fn test_process_common_files() {
         // Arrange
