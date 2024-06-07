@@ -1,27 +1,20 @@
-use std::collections::HashMap;
-use std::fs;
-use std::io::Error;
-use std::path::PathBuf;
-
-use tempfile::TempDir;
-
-use crate::common::unzip_module::unzip_files;
-
 #[cfg(feature = "testing")]
-pub fn setup_temp_gtfs_data(temporary_folder: &TempDir) -> Result<Vec<PathBuf>, Error> {
-    let gtfs_zip_path = PathBuf::from("tests/files/ic_ice_gtfs_germany.zip");
-    let files: Vec<PathBuf> =
-        unzip_files(gtfs_zip_path, temporary_folder.as_ref()).expect("Failed to unzip file");
+#[allow(unused_imports)]
+pub fn setup_temp_gtfs_data(temporary_folder: &tempfile::TempDir) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
+    let gtfs_zip_path = std::path::PathBuf::from("tests/files/ic_ice_gtfs_germany.zip");
+    let files: Vec<std::path::PathBuf> =
+        crate::common::unzip_module::unzip_files(gtfs_zip_path, temporary_folder.as_ref()).expect("Failed to unzip file");
     Ok(files)
 }
 
 #[cfg(feature = "testing")]
+#[allow(unused_imports)]
 pub fn check_file_content(
-    file: &PathBuf,
-    expected_lines: HashMap<usize, &str>,
+    file: &std::path::PathBuf,
+    expected_lines: std::collections::HashMap<usize, &str>,
     expected_size: usize,
 ) {
-    let file_content = fs::read_to_string(file).expect("Failed to read file");
+    let file_content = std::fs::read_to_string(file).expect("Failed to read file");
     // Check if the bounds of the file content are the same s the expected lines
     assert_eq!(file_content.lines().count(), expected_size);
 
