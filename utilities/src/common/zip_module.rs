@@ -7,6 +7,15 @@ use log::warn;
 use zip::read::ZipFile;
 use zip::ZipArchive;
 
+/// Unzip all files from a zip file
+///
+/// # Arguments
+///
+/// * `zip_path`: &PathBuf - The path to the zip file with multiple compressed files
+/// * `extract_to`: &PathBuf - The path to extract the files to
+///
+/// returns: Result<Vec<PathBuf, Global>, Box<dyn Error, Global>> - The paths to the extracted files
+///
 #[cfg(feature = "zip")]
 pub fn unzip_files(zip_path: &PathBuf, extract_to: &PathBuf) -> Result<Vec<PathBuf>, Box<dyn Error>> {
     let zip_file = File::open(&zip_path)?;
@@ -25,6 +34,15 @@ pub fn unzip_files(zip_path: &PathBuf, extract_to: &PathBuf) -> Result<Vec<PathB
     Ok(files)
 }
 
+/// Unzip a file from a zip file
+///
+/// # Arguments
+///
+/// * `file`: ZipFile - The file to extract
+/// * `extract_to`: &Path - The path to extract the file to
+///
+/// returns: Result<PathBuf, Box<dyn Error, Global>> - The path to the extracted file
+///
 #[cfg(feature = "zip")]
 pub fn unzip_file(mut file: ZipFile, extract_to: &Path) -> Result<PathBuf, Box<dyn Error>> {
     let file_name = file.name().to_string();

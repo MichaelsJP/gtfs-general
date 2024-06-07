@@ -7,7 +7,7 @@ mod tests {
     use polars::prelude::Series;
     use tempfile::tempdir;
 
-    use utilities::common::filter_module::{filter_file_by_dates, filter_file_by_values};
+    use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values};
     use utilities::testing::environment_module::setup_temp_gtfs_data;
 
     #[test]

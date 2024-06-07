@@ -3,6 +3,15 @@ use std::path::PathBuf;
 
 use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader, SerWriter};
 
+/// Ensure that the output file has a header
+///
+/// # Arguments
+///
+/// * `original_file`: &PathBuf - The file to get the header from in case the output file is empty
+/// * `output_file`: &PathBuf - The file to check for an existing header
+///
+/// returns: Result<PathBuf, Box<dyn Error, Global>> - The path to the output file with the header
+///
 #[cfg(feature = "file")]
 pub fn ensure_header(
     original_file: &PathBuf,
