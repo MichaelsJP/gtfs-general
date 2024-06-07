@@ -11,9 +11,11 @@ path = "src/lib.rs"
 tempfile = "3.10.1"
 zip = "2.1.3"
 log = "0.4.21"
-polars = { version = "0.40.0", features = ["lazy", "csv"] }
+polars = { version = "0.40.0", features = ["lazy", "csv", "strings"] }
 
 [features]
-default = []
-# New custom feature for conditional code
+default = ["filter", "zip", "file"]
 testing = ["default"]
+filter = ["polars/polars-lazy", "file", "polars/streaming"]
+zip = []
+file = ["polars/polars-lazy", "polars/csv"]

@@ -1,14 +1,10 @@
-#[cfg(feature = "testing")]
-#[allow(unused_imports)]
 pub fn setup_temp_gtfs_data(temporary_folder: &tempfile::TempDir) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
-    let gtfs_zip_path = std::path::PathBuf::from("tests/files/ic_ice_gtfs_germany.zip");
+    let gtfs_zip_path = std::path::PathBuf::from("../files/ic_ice_gtfs_germany.zip");
     let files: Vec<std::path::PathBuf> =
-        crate::common::unzip_module::unzip_files(gtfs_zip_path, temporary_folder.as_ref()).expect("Failed to unzip file");
+        crate::common::zip_module::unzip_files(&gtfs_zip_path, &temporary_folder.path().to_path_buf()).expect("Failed to unzip file");
     Ok(files)
 }
 
-#[cfg(feature = "testing")]
-#[allow(unused_imports)]
 pub fn check_file_content(
     file: &std::path::PathBuf,
     expected_lines: std::collections::HashMap<usize, &str>,

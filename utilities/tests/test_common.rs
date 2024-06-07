@@ -5,7 +5,7 @@ mod tests {
     use zip::write::SimpleFileOptions;
 
     use utilities::common::file_module;
-    use utilities::common::unzip_module;
+    use utilities::common::zip_module;
 
     #[test]
     fn test_unzip_files() {
@@ -23,7 +23,7 @@ mod tests {
         zip.finish().unwrap();
 
         // Unzip the file
-        let files = unzip_module::unzip_files(zip_file, temp_dir.path()).unwrap();
+        let files = zip_module::unzip_files(&zip_file, &temp_dir.path().to_path_buf()).unwrap();
         // Assert that the file was extracted
         assert_eq!(files.len(), 2);
         assert_eq!(files[0].file_name().unwrap(), "test1.txt");

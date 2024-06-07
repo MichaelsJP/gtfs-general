@@ -12,9 +12,9 @@ mod tests {
     use rstest::fixture;
     use tempfile::tempdir;
 
-    use gtfs_general::command::Command::{ExtractBbox, ExtractDate};
     use gtfs_general::command::{App, LogLevel};
-    use utilities::testing::test_utils::setup_temp_gtfs_data;
+    use gtfs_general::command::Command::{ExtractBbox, ExtractDate};
+    use utilities::testing::environment_module::setup_temp_gtfs_data;
 
     use super::*;
 
@@ -46,7 +46,7 @@ mod tests {
                 ][..],
                 &vec![String::from("metadata")],
             ]
-            .concat(),
+                .concat(),
         );
         assert_eq!(app.global_opts.level, LogLevel::Info);
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/short"));
@@ -65,7 +65,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-            .concat(),
+                .concat(),
         );
         assert_eq!(
             app.global_opts.working_directory,
@@ -81,7 +81,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-            .concat(),
+                .concat(),
         );
         assert_eq!(
             app.global_opts.working_directory,
@@ -108,7 +108,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-            .concat(),
+                .concat(),
         );
         // Assert that the log level is info
         assert_eq!(app.global_opts.level, log_level);

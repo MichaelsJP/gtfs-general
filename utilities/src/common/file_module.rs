@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader, SerWriter};
 
-#[cfg(feature = "default")]
+#[cfg(feature = "file")]
 pub fn ensure_header(
     original_file: &PathBuf,
     output_file: &PathBuf,
