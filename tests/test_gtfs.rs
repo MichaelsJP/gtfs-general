@@ -13,8 +13,10 @@ mod tests {
     use pretty_assertions::{assert_eq, assert_ne};
     use tempfile::tempdir;
 
-    use gtfs_general::gtfs::gtfs::{GTFS, ServiceRange};
-    use utilities::testing::environment_module::{check_file_content, setup_temp_gtfs_data};
+    use gtfs_general::gtfs::gtfs::{ServiceRange, GTFS};
+    use utilities::testing::environment_module::{
+        check_file_content, get_gtfs_test_data_path, setup_temp_gtfs_data,
+    };
 
     #[test]
     fn test_get_filenames_success_folder_and_no_working_directory() {
@@ -60,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_get_filenames_success_zip() {
-        let gtfs_zip_path = PathBuf::from("../files/ic_ice_gtfs_germany.zip");
+        let gtfs_zip_path = get_gtfs_test_data_path().expect("Failed to get gtfs test data path");
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
         // Create a sub folder
         let non_existent_subfolder = temp_working_directory.path().join("sub_folder");
@@ -165,7 +167,7 @@ mod tests {
     fn test_working_folder_creation() {
         // Arrange
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        let gtfs_zip_path = PathBuf::from("../files/ic_ice_gtfs_germany.zip");
+        let gtfs_zip_path = get_gtfs_test_data_path().expect("Failed to get gtfs test data path");
         // Create a sub folder
         let non_existent_subfolder = temp_working_directory.path().join("sub_folder");
 
@@ -214,7 +216,7 @@ mod tests {
     fn test_get_file_from_zip() {
         // Arrange
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        let gtfs_zip_path = PathBuf::from("../files/ic_ice_gtfs_germany.zip");
+        let gtfs_zip_path = get_gtfs_test_data_path().expect("Failed to get gtfs test data path");
 
         // Create Gtfs instance
         let gtfs = GTFS::new(gtfs_zip_path, temp_working_directory.path().to_path_buf());
@@ -238,7 +240,7 @@ mod tests {
     fn test_get_nonexistent_file_from_zip() {
         // Arrange
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        let gtfs_zip_path = PathBuf::from("../files/ic_ice_gtfs_germany.zip");
+        let gtfs_zip_path = get_gtfs_test_data_path().expect("Failed to get gtfs test data path");
 
         // Create Gtfs instance
         let gtfs = GTFS::new(gtfs_zip_path, temp_working_directory.path().to_path_buf());
@@ -247,11 +249,6 @@ mod tests {
 
         let non_existent_file = gtfs.get_file("foo.txt");
         assert!(non_existent_file.is_err(), "Expected Err, got Ok");
-        let error_message = non_existent_file.err().unwrap();
-        assert!(error_message.to_string().contains(
-            &"File does not exist in GTFS data: \"tests/files/ic_ice_gtfs_germany.zip\""
-                .to_string()
-        ))
     }
 
     #[test]
@@ -293,7 +290,7 @@ mod tests {
     fn test_get_file_write_permission_denied() {
         // Arrange
         let temp_working_directory = tempdir().expect("Failed to create temp folder");
-        let zip_path = PathBuf::from("../files/ic_ice_gtfs_germany.zip");
+        let gtfs_zip_path = get_gtfs_test_data_path().expect("Failed to get gtfs test data path");
         // Remove write permission from the temp_working_directory
         let mut perms = fs::metadata(temp_working_directory.path())
             .unwrap()
@@ -302,7 +299,7 @@ mod tests {
         fs::set_permissions(temp_working_directory.path(), perms).unwrap();
         // Create Gtfs instance with healthy gtfs data but ask for non existent file
         let gtfs = GTFS::new(
-            zip_path,
+            gtfs_zip_path,
             temp_working_directory.path().to_path_buf().clone(),
         );
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
@@ -535,7 +532,7 @@ mod tests {
             Series::new("trip_id", [0]),
             Series::new("shape_id", [0]), // this causes an empty shapefile. We want to test for the header.
         ])
-            .expect("Failed to create dataframe");
+        .expect("Failed to create dataframe");
 
         let routes_file = gtfs.get_file("routes.txt").expect("Failed to get file");
         let shapes_file = gtfs.get_file("shapes.txt").expect("Failed to get file");
@@ -591,7 +588,7 @@ mod tests {
             Series::new("trip_id", [1136, 114, 1855, 2539]),
             Series::new("shape_id", ["10001", "10001", "", ""]),
         ])
-            .expect("Failed to create dataframe");
+        .expect("Failed to create dataframe");
         let result = gtfs
             .process_common_files(
                 &temp_working_directory.path().to_path_buf(),

@@ -1,5 +1,14 @@
+use std::path::PathBuf;
+
+pub fn get_gtfs_test_data_path() -> Result<std::path::PathBuf, std::io::Error> {
+    let mut gtfs_zip_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    gtfs_zip_path.push("../resources/test/ic_ice_gtfs_germany.zip");
+    Ok(gtfs_zip_path)
+}
+
 pub fn setup_temp_gtfs_data(temporary_folder: &tempfile::TempDir) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
-    let gtfs_zip_path = std::path::PathBuf::from("../files/ic_ice_gtfs_germany.zip");
+    // Get the path of this test file
+    let gtfs_zip_path = get_gtfs_test_data_path()?;
     let files: Vec<std::path::PathBuf> =
         crate::common::zip_module::unzip_files(&gtfs_zip_path, &temporary_folder.path().to_path_buf()).expect("Failed to unzip file");
     Ok(files)
