@@ -1,18 +1,35 @@
-FROM python:3.11-buster as builder
+FROM rust:1.78.0-slim AS chef
 
-RUN apt-get update && \
-    apt-get install --no-install-suggests --no-install-recommends --yes pipx python3-venv
-ENV PATH="/root/.local/bin:${PATH}"
+RUN cargo install cargo-chef
 
-RUN pipx install poetry
-RUN pipx inject poetry poetry-plugin-bundle
+WORKDIR /usr/src/gtfs-general
 
+FROM chef as utilities-planner
+COPY utilities ./utilities
+RUN cd utilities && cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS gtfs-general-planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM chef AS utilities-builder
+COPY --from=utilities-planner /usr/src/gtfs-general/utilities/recipe.json utilities/recipe.json
+
+RUN cd utilities && cargo chef cook --release --recipe-path recipe.json
+COPY utilities utilities
+RUN cd utilities && cargo build --release
+
+FROM chef AS builder
+COPY --from=planner /usr/src/gtfs-general/recipe.json recipe.json
+COPY --from=utilities-builder /usr/src/gtfs-general/utilities/target utilities/target
+
+# Build dependencies - this is the caching Docker layer!
+RUN cargo chef cook --release --recipe-path recipe.json
+# Build application
+COPY src Cargo.toml Cargo.lock ./
+RUN cargo build --release --bin gtfs-general
+
+FROM debian:bookworm-slim AS runtime
 WORKDIR /app
-
-COPY ./ ./
-
-RUN poetry bundle venv --python=/usr/local/bin/python --only=main /venv
-
-WORKDIR /work
-
-ENTRYPOINT ["/venv/bin/gtfs-general"]
+COPY --from=builder /usr/src/gtfs-general/target/release/gtfs-general /usr/local/bin
+ENTRYPOINT ["/usr/local/bin/gtfs-general"]
