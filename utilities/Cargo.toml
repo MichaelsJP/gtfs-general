@@ -11,7 +11,8 @@ path = "src/lib.rs"
 tempfile = "3.10.1"
 zip = "2.1.3"
 log = "0.4.21"
-polars = { version = "0.40.0", features = ["lazy", "csv", "strings"] }
+polars = { version = "0.40.0", features = ["lazy", "csv", "strings", "regex", "dtype-categorical", "semi_anti_join", "parquet"] }
+smartstring = "1.0.1"
 
 [features]
 default = ["filter", "zip", "file"]

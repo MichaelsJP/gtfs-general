@@ -176,8 +176,8 @@ mod tests {
 
     use utilities::testing::environment_module::setup_temp_gtfs_data;
 
-    use crate::command::{App, LogLevel};
     use crate::command::Command::{ExtractBbox, ExtractDate};
+    use crate::command::{App, LogLevel};
 
     macro_rules! vec_of_strings {
     ($($x:expr),*) => (vec![$($x.to_string()),*]);
@@ -210,7 +210,7 @@ mod tests {
                 ][..],
                 &vec![String::from("metadata")],
             ]
-                .concat(),
+            .concat(),
         );
         assert_eq!(app.global_opts.level, LogLevel::Info);
         assert_eq!(app.global_opts.input_data, PathBuf::from("path/to/short"));
@@ -229,7 +229,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-                .concat(),
+            .concat(),
         );
         assert_eq!(
             app.global_opts.working_directory,
@@ -245,7 +245,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-                .concat(),
+            .concat(),
         );
         assert_eq!(
             app.global_opts.working_directory,
@@ -272,7 +272,7 @@ mod tests {
                     String::from("metadata"),
                 ],
             ]
-                .concat(),
+            .concat(),
         );
         // Assert that the log level is info
         assert_eq!(app.global_opts.level, log_level);

@@ -1,15 +1,20 @@
 #[cfg(feature = "filter")]
 pub mod filter_by {
     use std::error::Error;
-    use std::num::NonZeroUsize;
     use std::path::PathBuf;
 
+    use log::debug;
     use polars::datatypes::DataType;
+    use polars::datatypes::DataType::Categorical;
+    use polars::enable_string_cache;
     use polars::export::chrono::NaiveDate;
-    use polars::prelude::{all, col, CsvWriterOptions, Expr, LazyCsvReader, LazyFileListReader, lit, SerializeOptions, Series, StrptimeOptions};
+    use polars::export::rayon::join;
+    use polars::io::RowIndex;
+    use polars::prelude::{all, col, CsvWriterOptions, Expr, LazyCsvReader, LazyFileListReader, lit, Schema, SerializeOptions, Series, StrptimeOptions};
+    use polars::prelude::*;
 
     use crate::common::file_module;
-    use crate::common::file_module::ensure_header;
+    use crate::types::gtfs_data_types::GTFSDataTypes;
 
     /// Filter a file by values
     ///
@@ -22,49 +27,186 @@ pub mod filter_by {
     /// * `allowed_values`: &Series - Allowed values to filter by
     ///
     /// returns: Result<PathBuf, Box<dyn Error, Global>> - The path to the output file with the header
-
     pub fn filter_file_by_values(
         file: &PathBuf,
         output_folder: &PathBuf,
         column_names: Vec<&str>,
         data_types: Vec<DataType>,
         allowed_values: &Series,
+        expected_file_schema: Schema,
     ) -> Result<PathBuf, Box<dyn Error>> {
-        // If file doesn't exist return Err
+        // Set a global string cache
+        enable_string_cache();
+
+
+        // Ensure the file exists before proceeding
         if !file.exists() {
-            return Err(format!("File does not exist: {:?}", file))?;
+            return Err(format!("File does not exist: {:?}", file).into());
         }
-        let output_file = output_folder.join(file.file_name().unwrap());
-        let allowed = allowed_values.cast(&DataType::Int64).unwrap();
+
+        // Prepare the output file path
+        let output_file = output_folder.join(file.file_name().ok_or("Invalid file name")?);
+
+        // Cast allowed values to strings for filtering
+        let mut allowed = allowed_values.cast(&DataType::String)?;
+        allowed = allowed.cast(&Categorical(Default::default(), Default::default()))?;
         let mut columns = Vec::new();
-        let mut filter: Expr = Default::default();
+        // Create empty filter expression
+        let mut filter_expr: Expr = Default::default();
 
         // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
         for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
             let column = col(column_name).cast(data_type.clone());
             columns.push(column.clone());
             if column_name != &column_names[0] {
-                filter = filter.and(column.is_in(lit(allowed.clone())));
+                filter_expr = filter_expr.and(column.is_in(lit(allowed.clone())));
             } else {
-                filter = column.is_in(lit(allowed.clone()));
+                filter_expr = column.is_in(lit(allowed.clone()));
             };
         }
-        let csv_writer_options = CsvWriterOptions {
-            include_bom: false,
-            include_header: true,
-            batch_size: NonZeroUsize::new(10000).unwrap(),
-            maintain_order: true,
-            ..Default::default()
-        };
+
+
+        // Prepare a Schema reference from the provided expected schema
+        let schema_ref = Arc::new(expected_file_schema);
+
+        // Print info with the input file, output file and the function name
+        debug!("Filtering file: {:?} to {:?} in 'filter_file_by_values'", file, output_file);
+
+        // Process the CSV file
         LazyCsvReader::new(file)
             .with_has_header(true)
+            .with_low_memory(false)
+            .with_schema_modify(|file_schema: Schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
             .finish()?
-            .filter(filter)
-            .with_streaming(true)
-            .sink_csv(output_file.clone(), csv_writer_options.clone())?;
-        // Return path
-        Ok(ensure_header(&file, &output_file)?)
+            .filter(filter_expr)
+            .with_streaming(false).collect()?;
+
+        // Return the output file path, ensuring the header is included
+        Ok(output_file.to_path_buf())
     }
+
+    pub fn filter_file_by_values_df(
+        file: &PathBuf,
+        output_folder: &PathBuf,
+        join_columns: Vec<&str>,
+        mut join_df: DataFrame,
+        expected_file_schema: Schema,
+    ) -> Result<PathBuf, Box<dyn Error>> {
+        enable_string_cache();
+        // Ensure the file exists before proceeding
+        if !file.exists() {
+            return Err(format!("File does not exist: {:?}", file).into());
+        }
+
+        // Prepare the output file path
+        let output_file = output_folder.join(file.file_name().ok_or("Invalid file name")?);
+
+
+        let mut filter_expr: Expr = Default::default();
+        let mut columns = Vec::new();
+
+        // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
+        for i in 0..join_columns.len() {
+            let column_name = join_columns[i];
+            let column_data_type = expected_file_schema.get(column_name).expect("Column not found in schema");
+
+            let column = col(column_name).cast(column_data_type.clone());
+            columns.push(column.clone());
+            if i != 0 {
+                filter_expr = filter_expr.and(column.is_in(lit(join_df.column(column_name).unwrap().clone())));
+            } else {
+                filter_expr = column.is_in(lit(join_df.column(column_name).unwrap().clone()));
+            };
+        }
+
+        // Create a series with boolean type and height of the allowed series
+        // join_df.with_column(Series::new("allowed", vec![true; join_df.height()]))?;
+
+
+        // Make sure the schema is correct
+        let schema_ref = Arc::new(expected_file_schema);
+        // Make a right join of the allowed_df and the file
+        let ldf_input = LazyCsvReader::new(file)
+            .with_has_header(true)
+            .with_low_memory(false)
+            .with_schema_modify(|file_schema: Schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
+            .finish()?
+            .filter(filter_expr)
+            .with_streaming(false).collect()?;
+        // .join(ldf_input, &[col("route_id")], &[col("route_id")], JoinArgs::from(JoinType::Left));
+
+        Ok(output_file.to_path_buf())
+    }
+
+
+    pub fn filter_file_by_values_join(
+        file: &PathBuf,
+        output_folder: &PathBuf,
+        join_columns: Vec<&str>,
+        mut join_df: DataFrame,
+        expected_file_schema: Schema,
+    ) -> Result<PathBuf, Box<dyn Error>> {
+        enable_string_cache();
+        // Ensure the file exists before proceeding
+        if !file.exists() {
+            return Err(format!("File does not exist: {:?}", file).into());
+        }
+
+        // Prepare the output file path
+        let output_file = output_folder.join(file.file_name().ok_or("Invalid file name")?);
+
+        let mut columns = Vec::new();
+
+        // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
+        for column_name in join_columns.iter() {
+            let column = col(column_name);
+            columns.push(column.clone());
+        }
+
+        // Create a series with boolean type and height of the allowed series
+        join_df.with_column(Series::new("allowed", vec![true; join_df.height()]))?;
+
+
+        // Make sure the schema is correct
+        let schema_ref = Arc::new(expected_file_schema);
+
+        // Print join_df
+        // println!("Print columns");
+        // println!("{:?}", columns);
+        // println!("Print join_df");
+        // println!("{:?}", join_df);
+
+
+        // Make a right join of the allowed_df and the file
+        let ldf_input = LazyCsvReader::new(file)
+            .with_has_header(true)
+            .with_low_memory(false)
+            .with_schema_modify(|file_schema: Schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
+            .finish()?;
+        // join_df
+        //     .lazy()
+        //     .select(&columns)
+        //     .with_streaming(false)
+        //     .join(ldf_input, &[col("route_id")], &[col("route_id")], JoinArgs::from(JoinType::Semi)).collect()?;
+
+        let mut test = ldf_input
+            .select(&columns)
+            .with_row_estimate(true)
+            .with_row_index(&"id", None)
+            .with_streaming(false)
+            .join(join_df.lazy(), &columns, &columns, JoinArgs::from(JoinType::Left))
+            .filter(col("allowed"))
+            .select(&[all().exclude(&["allowed"])])
+            // TODO join the old columns by index using the id column
+            .collect()?;
+        // Print the first 5 rows of the joined dataframe
+        println!("{:?}", test.head(Some(5)));
+        // .sink_csv(output_file.clone(), CsvWriterOptions::default())?;
+        let mut file = std::fs::File::create(&output_file).unwrap();
+        CsvWriter::new(&mut file).finish(&mut test).unwrap();
+        Ok(output_file.to_path_buf())
+    }
+
 
     /// Filter a file by dates
     ///
@@ -86,65 +228,78 @@ pub mod filter_by {
         end_date: &str,
         start_date_column: &str,
         end_date_column: &str,
+        expected_file_schema: Schema,
     ) -> Result<PathBuf, Box<dyn Error>> {
-        // Get the file name and add it to the output folder
-        let output_file = output_folder.join(file_name.file_name().unwrap());
+        // Derive the output file path
+        let output_file = output_folder.join(file_name.file_name().ok_or("Invalid file name")?);
 
-        // Cast start_date to a date object
+        // Parse the start and end dates
         let start_date_converted = NaiveDate::parse_from_str(start_date, "%Y-%m-%d")?;
         let end_date_converted = NaiveDate::parse_from_str(end_date, "%Y-%m-%d")?;
+
+        // Prepare a Schema reference from the provided expected schema
+        let schema_ref = Arc::new(expected_file_schema);
+
+        // Define date parsing options for the columns
         let strptime_options = StrptimeOptions {
             format: Some("%Y%m%d".to_string()),
             ..Default::default()
         };
-        let start_date_format = col(start_date_column)
+
+        // Create date format expressions for start and end dates
+        let start_date_expr = col(start_date_column)
             .cast(DataType::String)
             .str()
             .to_date(strptime_options.clone())
             .dt()
             .date();
-        let end_date_format: Expr;
-        let date_format_vector: Vec<Expr>;
-        if start_date_column != end_date_column {
-            end_date_format = col(end_date_column)
-                .cast(DataType::String)
-                .str()
-                .to_date(strptime_options.clone())
-                .dt()
-                .date();
-            date_format_vector = vec![start_date_format.clone(), end_date_format.clone()];
+
+        // Conditionally add end date column if it's different from the start date column
+        let date_columns = if start_date_column != end_date_column {
+            vec![
+                start_date_expr.clone(),
+                col(end_date_column)
+                    .cast(DataType::String)
+                    .str()
+                    .to_date(strptime_options.clone())
+                    .dt()
+                    .date(),
+            ]
         } else {
-            // Only one format expression, else the filter will fail
-            date_format_vector = vec![start_date_format.clone()];
-        }
-        let serialize_options = SerializeOptions {
-            date_format: Some("%Y%m%d".to_string()),
-            ..Default::default()
-        };
-        let csv_writer_options = CsvWriterOptions {
-            include_bom: false,
-            include_header: true,
-            batch_size: NonZeroUsize::new(10000).unwrap(),
-            maintain_order: true,
-            serialize_options,
+            vec![start_date_expr.clone()]
         };
 
-        // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
+        // CSV writer options
+        let csv_writer_options = CsvWriterOptions {
+            maintain_order: true,
+            serialize_options: SerializeOptions {
+                date_format: Some("%Y%m%d".to_string()),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        // Log debug information
+        debug!("Filtering file: {:?} to {:?} in 'filter_file_by_dates'", file_name, output_file);
+        // Create a lazy CSV reader, apply schema modification, filter, and write to CSV
         LazyCsvReader::new(file_name)
             .with_has_header(true)
-            .with_low_memory(true)
+            .with_low_memory(false)
+            .with_schema_modify(|file_schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
             .finish()?
-            // Select all and cast the start date and end date to a date object
-            .select(&[all()])
-            .with_columns(date_format_vector)
+            .select(&[all()]) // Ensure all columns are selected
+            .with_columns(date_columns)
             .filter(
                 col(start_date_column)
                     .gt_eq(lit(start_date_converted))
                     .and(col(end_date_column).lt_eq(lit(end_date_converted))),
             )
-            .with_streaming(true)
+            .with_streaming(false)
             .sink_csv(output_file.clone(), csv_writer_options)?;
-        file_module::ensure_header(&file_name, &output_file)?;
+
+        // Ensure header is included in the output file
+        file_module::ensure_header(file_name, &output_file)?;
+
         Ok(output_file)
     }
 }
@@ -153,10 +308,15 @@ pub mod filter_by {
 pub mod filter_column {
     use std::error::Error;
     use std::path::PathBuf;
+    use std::sync::Arc;
 
+    use log::debug;
     use polars::datatypes::DataType;
+    use polars::enable_string_cache;
     use polars::frame::DataFrame;
-    use polars::prelude::{col, LazyCsvReader, LazyFileListReader, Series};
+    use polars::prelude::{col, LazyCsvReader, LazyFileListReader, Schema, Series};
+
+    use crate::types::gtfs_data_types::GTFSDataTypes;
 
     /// Get a column from a csv file and format it to a definable type
     ///
@@ -173,9 +333,10 @@ pub mod filter_column {
         file_path: PathBuf,
         column_name: &str,
         data_type: DataType,
+        expected_file_schema: Schema,
     ) -> Result<Series, Box<dyn Error>> {
         // Calls get_column with the file_name and column_name and data_type
-        let df = get_columns(file_path, vec![column_name], vec![data_type])?;
+        let df = get_columns(file_path, vec![column_name], vec![data_type], expected_file_schema)?;
         // Return column
         Ok(df.column(column_name).unwrap().clone())
     }
@@ -194,21 +355,31 @@ pub mod filter_column {
         file_path: PathBuf,
         column_names: Vec<&str>,
         data_types: Vec<DataType>,
+        expected_file_schema: Schema,
     ) -> Result<DataFrame, Box<dyn Error>> {
+        // Set a global string cache
+        enable_string_cache();
         let mut columns = Vec::new();
         // Iterate through the column names and data types and create a vector of expressions and add it to columns
-        for (column_name, data_type) in column_names.iter().zip(data_types.iter()) {
-            columns.push(col(column_name).cast(data_type.clone()));
+        for column_name in column_names.iter() {
+            let schema = expected_file_schema.get(column_name).unwrap();
+            columns.push(col(column_name).cast(schema.clone()));
         }
+        let schema_ref = Arc::new(expected_file_schema);
+
+        // Print info with the input file, output file and the function name
+        debug!("Getting columns: {:?} from file: {:?}", column_names, file_path);
+
         // Create a lazy csv reader
         let df = LazyCsvReader::new(file_path.clone())
-            .with_low_memory(true)
+            .with_low_memory(false)
             .with_has_header(true)
+            .with_schema_modify(|file_schema: Schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
             .finish()?
-            .select(columns)
-            .with_streaming(true)
+            .select(&columns)
+            .with_streaming(false)
             .collect()?;
-        // TODO sink to temp csv file
+        // TODO sink to temp csv file or return lazy
         // Return column
         Ok(df)
     }

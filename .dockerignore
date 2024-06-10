@@ -1,5 +1,10 @@
+# Ignore all
 *
 
+# Allow list
 !src
 !Cargo.toml
 !Cargo.lock
+!utilities/Cargo.toml
+!utilities/Cargo.lock
+!utilities/src

@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::path::PathBuf;
 
+use log::debug;
 use polars::prelude::{CsvWriter, LazyCsvReader, LazyFileListReader, SerWriter};
 
 /// Ensure that the output file has a header
@@ -17,13 +18,17 @@ pub fn ensure_header(
     original_file: &PathBuf,
     output_file: &PathBuf,
 ) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    // Print info with the input file, output file and the function name
+    debug!("Ensuring header for file: {:?} to file: {:?}", original_file, output_file);
     // Check if file is empty
     if output_file.metadata()?.len() == 0 {
         // Get number of rows from file
         let mut df = LazyCsvReader::new(original_file)
             .with_has_header(true)
+            .with_low_memory(false)
             .with_n_rows(Some(0))
             .finish()?
+            .with_streaming(false)
             .collect()?;
         // Write the headers to file
         let mut output_file_ensured = File::create(&output_file)?;

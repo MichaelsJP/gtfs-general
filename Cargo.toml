@@ -6,7 +6,7 @@ authors = ["Julian Psotta <julianpsotta@gmail.com>"]
 
 [dependencies]
 clap = { version = "4.4.12", features = ["derive"] }
-polars = { version = "0.40.0", features = ["lazy", "streaming", "strings", "dtype-date", "timezones", "csv", "is_in"] }
+polars = { version = "0.40.0", features = ["lazy", "streaming", "strings", "dtype-date", "timezones", "csv", "is_in", "parquet"] }
 zip = "2.1.3"
 env_logger = { version = "0.11.3" }
 log = "0.4.20"

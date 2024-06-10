@@ -7,11 +7,14 @@ use std::path::PathBuf;
 
 use ::zip::ZipArchive;
 use log::{debug, error, info};
+use polars::enable_string_cache;
 use polars::prelude::*;
+use polars::prelude::DataType::Categorical;
 
 use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values};
 use utilities::common::filter_module::filter_column::{get_column, get_columns};
 use utilities::common::zip_module::unzip_file;
+use utilities::types::gtfs_data_types::GTFSDataTypes;
 
 pub struct ServiceRange {
     pub start_date: String,
@@ -316,6 +319,9 @@ impl GTFS {
             })
             .dt()
             .date();
+        // Print info with the input file, output file and the function name
+        debug!("Getting service date range from file: {:?}", calendar_file);
+
         // Create a lazy csv reader select start and end date and filter the minimum start date by using a boolean expression
         let lf = LazyCsvReader::new(calendar_file?)
             .with_has_header(true)
@@ -326,7 +332,7 @@ impl GTFS {
                 end_date.max(),
             ]);
 
-        let df = lf.with_streaming(true).collect()?;
+        let df = lf.with_streaming(false).collect()?;
         let start_date: String = df.column("start_date").unwrap().get(0).unwrap().to_string();
         let latest_start_date: String = df
             .column("latest_start_date")
@@ -367,46 +373,60 @@ impl GTFS {
             &routes_file,
             output_folder,
             vec!["route_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             route_trip_shape_ids_to_keep.column("route_id")?,
+            GTFSDataTypes::routes(),
         )?;
         file_paths.push(filtered_routes_file.clone());
         let filtered_shapes_file = filter_file_by_values(
             &shapes_file,
             output_folder,
             vec!["shape_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             route_trip_shape_ids_to_keep.column("shape_id")?,
+            GTFSDataTypes::shapes(),
         )?;
         file_paths.push(filtered_shapes_file);
         let filtered_stop_times_file = filter_file_by_values(
             &stop_times_file,
             output_folder,
             vec!["trip_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             route_trip_shape_ids_to_keep.column("trip_id")?,
+            GTFSDataTypes::stop_times(),
         )?;
         file_paths.push(filtered_stop_times_file.clone());
 
-        let agency_ids_to_keep =
-            get_column(filtered_routes_file.clone(), "agency_id", DataType::Int64)?;
+        let agency_ids_to_keep = get_column(
+            filtered_routes_file.clone(),
+            "agency_id",
+            Categorical(Default::default(), Default::default()),
+            GTFSDataTypes::routes(),
+        )?;
         let filtered_agency_file = filter_file_by_values(
             &agency_file,
             output_folder,
             vec!["agency_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             &agency_ids_to_keep,
+            GTFSDataTypes::agency(),
         )?;
         file_paths.push(filtered_agency_file);
 
         // Filter stops file by stop_ids_to_keep
-        let stop_ids_to_keep = get_column(filtered_stop_times_file, "stop_id", DataType::Int64)?;
+        let stop_ids_to_keep = get_column(
+            filtered_stop_times_file,
+            "stop_id",
+            Categorical(Default::default(), Default::default()),
+            GTFSDataTypes::stop_times(),
+        )?;
         let filtered_stops_file = filter_file_by_values(
             &stops_file,
             output_folder,
             vec!["stop_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             &stop_ids_to_keep,
+            GTFSDataTypes::stops(),
         )?;
         file_paths.push(filtered_stops_file);
 
@@ -417,8 +437,9 @@ impl GTFS {
                 &frequencies_file,
                 output_folder,
                 vec!["trip_id"],
-                vec![DataType::Int64],
+                vec![Categorical(Default::default(), Default::default())],
                 route_trip_shape_ids_to_keep.column("trip_id")?,
+                GTFSDataTypes::frequencies(),
             )?;
             file_paths.push(frequencies_file);
         } else {
@@ -430,8 +451,9 @@ impl GTFS {
                 &transfers_file,
                 output_folder,
                 vec!["from_stop_id", "to_stop_id"],
-                vec![DataType::Int64, DataType::Int64],
+                vec![Categorical(Default::default(), Default::default()), Categorical(Default::default(), Default::default())],
                 &stop_ids_to_keep,
+                GTFSDataTypes::transfers(),
             )?;
             file_paths.push(transfers_file);
         } else {
@@ -505,6 +527,7 @@ impl GTFS {
             end_date,
             "start_date",
             "end_date",
+            GTFSDataTypes::calendar(),
         )?;
         let filtered_calendar_dates_file = filter_file_by_dates(
             &calendar_dates_file,
@@ -513,28 +536,33 @@ impl GTFS {
             end_date,
             "date",
             "date",
+            GTFSDataTypes::calendar_dates(),
         )?;
         let mut service_ids_to_keep = get_column(
             filtered_calendar_file.clone(),
             "service_id",
-            DataType::Int64,
+            Categorical(Default::default(), Default::default()),
+            GTFSDataTypes::calendar(),
         )?;
         let service_ids_to_keep = service_ids_to_keep.append(&get_column(
             filtered_calendar_dates_file.clone(),
             "service_id",
-            DataType::Int64,
+            Categorical(Default::default(), Default::default()),
+            GTFSDataTypes::calendar_dates(),
         )?)?;
         let filtered_trips_file = filter_file_by_values(
             &trips_file,
             output_folder,
             vec!["service_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             service_ids_to_keep,
+            GTFSDataTypes::trips(),
         )?;
         let route_trip_shape_ids_to_keep = get_columns(
             filtered_trips_file.clone(),
             vec!["route_id", "trip_id", "shape_id"],
-            vec![DataType::Int64, DataType::Int64, DataType::Int64],
+            vec![Categorical(Default::default(), Default::default()), Categorical(Default::default(), Default::default()), Categorical(Default::default(), Default::default())],
+            GTFSDataTypes::trips(),
         )?;
         let mut processed_common_files =
             self.process_common_files(output_folder, &route_trip_shape_ids_to_keep)?;
@@ -554,10 +582,10 @@ mod tests {
     use std::fs::File;
     use std::path::PathBuf;
 
-    use polars::datatypes::DataType;
     use polars::datatypes::DataType::Int32;
     use polars::frame::DataFrame;
     use polars::prelude::{NamedFrom, Series};
+    use polars::prelude::DataType::Categorical;
     use tempfile::tempdir;
 
     use utilities::common::filter_module::filter_by::filter_file_by_values;
@@ -565,6 +593,7 @@ mod tests {
     use utilities::testing::environment_module::{
         check_file_content, get_gtfs_test_data_path, setup_temp_gtfs_data,
     };
+    use utilities::types::gtfs_data_types::GTFSDataTypes;
 
     use crate::gtfs::gtfs::{GTFS, ServiceRange};
 
@@ -669,10 +698,10 @@ mod tests {
 
         // Create dataframe with the below data
         let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
-            Series::new("route_id", [9, 9, 9, 9]),
-            Series::new("service_id", [68, 68, 68, 68]),
-            Series::new("direction_id", [0, 0, 0, 0]),
-            Series::new("trip_id", [1136, 114, 1855, 2539]),
+            Series::new("route_id", ["9", "9", "9", "9"]),
+            Series::new("service_id", ["68", "68", "68", "68"]),
+            Series::new("direction_id", ["0", "0", "0", "0"]),
+            Series::new("trip_id", ["1136", "114", "1855", "2539_1"]),
             Series::new("shape_id", ["10001", "10001", "", ""]),
         ])
             .expect("Failed to create dataframe");
@@ -695,10 +724,12 @@ mod tests {
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "routes.txt")
             .expect("Failed to find routes.txt");
         let mut expected_lines = HashMap::new();
-        expected_lines.insert(0, "route_long_name,route_short_name,agency_id,route_type,route_id");
+        expected_lines.insert(
+            0,
+            "route_long_name,route_short_name,agency_id,route_type,route_id",
+        );
         expected_lines.insert(1, "Intercity-Express,ICE 79,6,2,9");
         check_file_content(routes_file, expected_lines, 2);
-
 
         // check agency.txt
         let agency_file = result
@@ -706,8 +737,14 @@ mod tests {
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "agency.txt")
             .expect("Failed to find agency.txt");
         expected_lines = HashMap::new();
-        expected_lines.insert(0, "agency_id,agency_name,agency_url,agency_timezone,agency_lang");
-        expected_lines.insert(1, "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de");
+        expected_lines.insert(
+            0,
+            "agency_id,agency_name,agency_url,agency_timezone,agency_lang",
+        );
+        expected_lines.insert(
+            1,
+            "6,DB Fernverkehr AG,https://www.bahn.de,Europe/Berlin,de",
+        );
 
         check_file_content(agency_file, expected_lines, 2);
 
@@ -732,14 +769,16 @@ mod tests {
         expected_lines.insert(14, "Liège-Guillemins,915,50.62436,5.566483");
         check_file_content(stops_file, expected_lines, 15);
 
-
         // Check shapes.txt
         let shapes_file = result
             .iter()
             .find(|f| f.file_name().unwrap().to_str().unwrap() == "shapes.txt")
             .expect("Failed to find shapes.txt");
         expected_lines = HashMap::new();
-        expected_lines.insert(0, "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled");
+        expected_lines.insert(
+            0,
+            "shape_id,shape_pt_sequence,shape_pt_lat,shape_pt_lon,shape_dist_traveled",
+        );
         expected_lines.insert(1, "10001,0,49.445,8.668,0.0");
         expected_lines.insert(2, "10001,1,49.445,8.668,54.527");
         expected_lines.insert(5, "10001,4,49.445,8.668,89.914");
@@ -1057,7 +1096,12 @@ mod tests {
 
         // Act
         let calendar_file = gtfs.get_file("calendar.txt").expect("Failed to get file");
-        let result = get_column(calendar_file, "service_id", Int32);
+        let result = get_column(
+            calendar_file,
+            "service_id",
+            Int32,
+            GTFSDataTypes::calendar(),
+        );
 
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
@@ -1087,6 +1131,7 @@ mod tests {
             calendar_file,
             vec!["service_id", "start_date"],
             vec![Int32, Int32],
+            GTFSDataTypes::calendar(),
         );
 
         // Assert
@@ -1131,11 +1176,15 @@ mod tests {
             &routes_file,
             &temp_working_directory.path().to_path_buf(),
             vec!["route_id"],
-            vec![DataType::Int64],
+            vec![Categorical(Default::default(), Default::default())],
             route_trip_shape_ids_to_keep.column("route_id").unwrap(),
+            GTFSDataTypes::routes(),
         );
         let mut expected_lines = HashMap::new();
-        expected_lines.insert(0, "route_long_name,route_short_name,agency_id,route_type,route_id");
+        expected_lines.insert(
+            0,
+            "route_long_name,route_short_name,agency_id,route_type,route_id",
+        );
         check_file_content(&filtered_routes_file.unwrap(), expected_lines, 1);
     }
 
