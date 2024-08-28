@@ -1,6 +1,10 @@
+# Ignore all
 *
 
+# Allow list
 !src
-!poetry.lock
-!pyproject.toml
-!README.md
+!Cargo.toml
+!Cargo.lock
+!utilities/Cargo.toml
+!utilities/Cargo.lock
+!utilities/src

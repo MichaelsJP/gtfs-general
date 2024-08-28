@@ -1,10 +1,18 @@
+import os
 import pathlib
+from multiprocessing import Process, Queue
+from os import getpid
+from signal import SIGINT
+from threading import Timer
+from time import sleep
 from typing import List
 
+import pytest
 from _pytest._py.path import LocalPath
 from typer.testing import CliRunner
 
-from gtfs_general import __app_name__, __version__, main
+from gtfs_general import main
+from src.gtfs_general import __app_name__, __version__
 
 runner = CliRunner()
 
@@ -68,7 +76,7 @@ def test_version() -> None:
 
 
 def test_extract_by_bbox_with_file(tmpdir: LocalPath) -> None:
-    test_gtfs_file: str = script_path.joinpath("../../files/ic_ice_gtfs_germany.zip").__str__()
+    test_gtfs_file: str = script_path.joinpath("../files/ic_ice_gtfs_germany.zip").__str__()
 
     result = runner.invoke(
         main.app,
@@ -173,3 +181,94 @@ def test_filter_by_date(gtfs_test_folder: pathlib.Path, tmpdir: LocalPath) -> No
                 assert x == 10
             elif file.name == "shapes.txt":
                 assert x == 6
+
+
+@pytest.mark.parametrize(
+    "log_level",
+    ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", None],
+)
+def test_logging_level(log_level: str) -> None:
+    if log_level is None:
+        # Test default log level
+        result = runner.invoke(
+            main.app,
+            ["--no-progress", "void"],
+        )
+        log_level = "INFO"
+    else:
+        result = runner.invoke(
+            main.app,
+            ["--logging", log_level, "--no-progress", "void"],
+        )
+    assert result.exit_code == 0
+
+    levels = {
+        "DEBUG": ["INFO", "DEBUG", "WARNING", "ERROR", "CRITICAL"],
+        "INFO": ["INFO", "WARNING", "ERROR", "CRITICAL"],
+        "WARNING": ["WARNING", "ERROR", "CRITICAL"],
+        "ERROR": ["ERROR", "CRITICAL"],
+        "CRITICAL": ["CRITICAL"],
+    }
+
+    messages = {
+        "INFO": "This is an info message.",
+        "DEBUG": "This is a debug message.",
+        "WARNING": "This is a warning message.",
+        "ERROR": "This is an error message.",
+        "CRITICAL": "This is a critical message.",
+    }
+
+    for level in levels[log_level]:
+        assert f"{level} - {messages[level]}" in result.stdout
+    for level in set(levels.keys()) - set(levels[log_level]):
+        assert f"{level} - {messages[level]}" not in result.stdout
+
+
+# parametrize for webserver uvicorn with port, reload, workers nested
+@pytest.mark.parametrize(
+    "workers, reload, gunicorn",
+    [
+        (1, False, False),
+        (2, True, False),
+        # (1, True, True),
+    ],
+)
+def test_webserver(random_open_port: int, workers: int, reload: bool, gunicorn: bool) -> None:
+    queue: Queue = Queue()
+    port = random_open_port
+    # Running out app in SubProcess and after a while using signal sending
+    # SIGINT, results passed back via channel/queue
+    args = ["--no-progress", "server", "--port", port, "--workers", workers]
+    if reload:
+        args.append("--reload")
+    if gunicorn:
+        args.append("--gunicorn")
+
+    def background() -> None:  # pragma: no cover
+        Timer(2, lambda: os.kill(getpid(), SIGINT)).start()
+        thread_result = runner.invoke(main.app, args)
+        queue.put(("result", thread_result))
+
+    p = Process(target=background)
+    p.start()
+
+    results = {}
+
+    while p.is_alive():
+        sleep(0.2)
+    else:
+        while not queue.empty():
+            key, value = queue.get()
+            results[key] = value
+    result = results["result"]
+    assert result.exit_code == 0 or result.exit_code == 1
+    assert "INFO - Log level: INFO" in result.stdout
+    assert "Start server" in result.stdout
+    assert "INFO - Host: 0.0.0.0" in result.stdout
+    assert f"INFO - Port: {port}" in result.stdout
+    assert f"INFO - Workers: {workers}" in result.stdout
+    if not gunicorn:
+        assert f"INFO - Reload: {reload}" in result.stdout
+        assert "INFO - Webserver: uvicorn" in result.stdout
+    else:
+        assert "INFO - Webserver: gunicorn" in result.stdout

@@ -1,0 +1,22 @@
+[package]
+name = "utilities"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "utilities"
+path = "src/lib.rs"
+
+[dependencies]
+tempfile = "3.10.1"
+zip = "2.1.3"
+log = "0.4.21"
+polars = { version = "0.40.0", features = ["lazy", "csv", "strings", "regex", "dtype-categorical", "semi_anti_join", "parquet"] }
+smartstring = "1.0.1"
+
+[features]
+default = ["filter", "zip", "file"]
+testing = ["default"]
+filter = ["polars/polars-lazy", "file", "polars/streaming", "polars/is_in"]
+zip = []
+file = ["polars/polars-lazy", "polars/csv"]
