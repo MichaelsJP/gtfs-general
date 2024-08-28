@@ -11,7 +11,7 @@ use polars::enable_string_cache;
 use polars::prelude::*;
 use polars::prelude::DataType::Categorical;
 
-use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values};
+use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values_df, filter_file_by_values_join};
 use utilities::common::filter_module::filter_column::{get_column, get_columns};
 use utilities::common::zip_module::unzip_file;
 use utilities::types::gtfs_data_types::GTFSDataTypes;
@@ -369,63 +369,58 @@ impl GTFS {
         let mut file_paths: Vec<PathBuf> = vec![];
 
         // Filter files
-        let filtered_routes_file = filter_file_by_values(
+        let filtered_routes_file = filter_file_by_values_df(
             &routes_file,
             output_folder,
             vec!["route_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            route_trip_shape_ids_to_keep.column("route_id")?,
+            route_trip_shape_ids_to_keep.clone(),
             GTFSDataTypes::routes(),
         )?;
         file_paths.push(filtered_routes_file.clone());
-        let filtered_shapes_file = filter_file_by_values(
+        let filtered_shapes_file = filter_file_by_values_df(
             &shapes_file,
             output_folder,
             vec!["shape_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            route_trip_shape_ids_to_keep.column("shape_id")?,
+            route_trip_shape_ids_to_keep.clone(),
             GTFSDataTypes::shapes(),
         )?;
         file_paths.push(filtered_shapes_file);
-        let filtered_stop_times_file = filter_file_by_values(
+        let filtered_stop_times_file = filter_file_by_values_df(
             &stop_times_file,
             output_folder,
             vec!["trip_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            route_trip_shape_ids_to_keep.column("trip_id")?,
+            route_trip_shape_ids_to_keep.clone(),
             GTFSDataTypes::stop_times(),
         )?;
         file_paths.push(filtered_stop_times_file.clone());
 
-        let agency_ids_to_keep = get_column(
+        let agency_ids_to_keep = get_columns(
             filtered_routes_file.clone(),
-            "agency_id",
-            Categorical(Default::default(), Default::default()),
+            vec!["agency_id"],
+            vec![Categorical(Default::default(), Default::default())],
             GTFSDataTypes::routes(),
         )?;
-        let filtered_agency_file = filter_file_by_values(
+        let filtered_agency_file = filter_file_by_values_df(
             &agency_file,
             output_folder,
             vec!["agency_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            &agency_ids_to_keep,
+            agency_ids_to_keep.clone(),
             GTFSDataTypes::agency(),
         )?;
         file_paths.push(filtered_agency_file);
 
         // Filter stops file by stop_ids_to_keep
-        let stop_ids_to_keep = get_column(
+        let stop_ids_to_keep = get_columns(
             filtered_stop_times_file,
-            "stop_id",
-            Categorical(Default::default(), Default::default()),
+            vec!["stop_id"],
+            vec![Categorical(Default::default(), Default::default())],
             GTFSDataTypes::stop_times(),
         )?;
-        let filtered_stops_file = filter_file_by_values(
+        let filtered_stops_file = filter_file_by_values_df(
             &stops_file,
             output_folder,
             vec!["stop_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            &stop_ids_to_keep,
+            stop_ids_to_keep.clone(),
             GTFSDataTypes::stops(),
         )?;
         file_paths.push(filtered_stops_file);
@@ -433,12 +428,11 @@ impl GTFS {
         // Filter conditional files
         if frequencies_file.exists() {
             // Frequencies is an optional file
-            filter_file_by_values(
+            filter_file_by_values_df(
                 &frequencies_file,
                 output_folder,
                 vec!["trip_id"],
-                vec![Categorical(Default::default(), Default::default())],
-                route_trip_shape_ids_to_keep.column("trip_id")?,
+                route_trip_shape_ids_to_keep.clone(),
                 GTFSDataTypes::frequencies(),
             )?;
             file_paths.push(frequencies_file);
@@ -447,12 +441,11 @@ impl GTFS {
         }
         // Filter transfers file by stop_ids_to_keep the file is optional
         if transfers_file.exists() {
-            filter_file_by_values(
+            filter_file_by_values_df(
                 &transfers_file,
                 output_folder,
                 vec!["from_stop_id", "to_stop_id"],
-                vec![Categorical(Default::default(), Default::default()), Categorical(Default::default(), Default::default())],
-                &stop_ids_to_keep,
+                stop_ids_to_keep.clone(),
                 GTFSDataTypes::transfers(),
             )?;
             file_paths.push(transfers_file);
@@ -550,12 +543,11 @@ impl GTFS {
             Categorical(Default::default(), Default::default()),
             GTFSDataTypes::calendar_dates(),
         )?)?;
-        let filtered_trips_file = filter_file_by_values(
+        let filtered_trips_file = filter_file_by_values_df(
             &trips_file,
             output_folder,
             vec!["service_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            service_ids_to_keep,
+            DataFrame::new(vec![service_ids_to_keep.clone().into_series()])?,
             GTFSDataTypes::trips(),
         )?;
         let route_trip_shape_ids_to_keep = get_columns(
@@ -584,11 +576,10 @@ mod tests {
 
     use polars::datatypes::DataType::Int32;
     use polars::frame::DataFrame;
-    use polars::prelude::{NamedFrom, Series};
-    use polars::prelude::DataType::Categorical;
+    use polars::prelude::{AnyValue, NamedFrom, Series};
     use tempfile::tempdir;
 
-    use utilities::common::filter_module::filter_by::filter_file_by_values;
+    use utilities::common::filter_module::filter_by::filter_file_by_values_df;
     use utilities::common::filter_module::filter_column::{get_column, get_columns};
     use utilities::testing::environment_module::{
         check_file_content, get_gtfs_test_data_path, setup_temp_gtfs_data,
@@ -1106,10 +1097,11 @@ mod tests {
         // Assert
         assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
         let result = result.unwrap();
-        pretty_assertions::assert_eq!(result.len(), 84);
-        pretty_assertions::assert_eq!(result.get(0).unwrap().to_string(), "68");
-        pretty_assertions::assert_eq!(result.get(1).unwrap().to_string(), "76");
-        pretty_assertions::assert_eq!(result.iter().last().unwrap().to_string(), "86");
+        println!("{:?}", result);
+        assert_eq!(result.len(), 84);
+        assert_eq!(result.get(0).unwrap().cast(&Int32), AnyValue::from(68));
+        assert_eq!(result.get(1).unwrap().cast(&Int32), AnyValue::from(76));
+        assert_eq!(result.iter().last().unwrap().cast(&Int32), AnyValue::from(86));
     }
 
     #[test]
@@ -1140,12 +1132,12 @@ mod tests {
         pretty_assertions::assert_eq!(result.iter().len(), 2);
         pretty_assertions::assert_eq!(result[0].len(), 84);
         pretty_assertions::assert_eq!(result[1].len(), 84);
-        pretty_assertions::assert_eq!(result[0].get(0).unwrap().to_string(), "68");
-        pretty_assertions::assert_eq!(result[0].get(1).unwrap().to_string(), "76");
-        pretty_assertions::assert_eq!(result[0].iter().last().unwrap().to_string(), "86");
-        pretty_assertions::assert_eq!(result[1].get(0).unwrap().to_string(), "20221002");
-        pretty_assertions::assert_eq!(result[1].get(1).unwrap().to_string(), "20221002");
-        pretty_assertions::assert_eq!(result[1].iter().last().unwrap().to_string(), "20221003");
+        pretty_assertions::assert_eq!(result[0].get(0).unwrap().cast(&Int32), AnyValue::from(68));
+        pretty_assertions::assert_eq!(result[0].get(1).unwrap().cast(&Int32), AnyValue::from(76));
+        pretty_assertions::assert_eq!(result[0].iter().last().unwrap().cast(&Int32), AnyValue::from(86));
+        pretty_assertions::assert_eq!(result[1].get(0).unwrap().cast(&Int32), AnyValue::from(20221002));
+        pretty_assertions::assert_eq!(result[1].get(1).unwrap().cast(&Int32), AnyValue::from(20221002));
+        pretty_assertions::assert_eq!(result[1].iter().last().unwrap().cast(&Int32), AnyValue::from(20221003));
     }
 
     #[test]
@@ -1161,23 +1153,22 @@ mod tests {
         assert!(gtfs.is_ok(), "Expected Ok, got Err: {:?}", gtfs);
         let gtfs = gtfs.unwrap();
         let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
-            Series::new("route_id", [0]),
-            Series::new("service_id", [0]),
-            Series::new("direction_id", [0]),
-            Series::new("trip_id", [0]),
-            Series::new("shape_id", [0]), // this causes an empty shapefile. We want to test for the header.
+            Series::new("route_id", ["0"]),
+            Series::new("service_id", ["0"]),
+            Series::new("direction_id", ["0"]),
+            Series::new("trip_id", ["0"]),
+            Series::new("shape_id", ["0"]),
         ])
             .expect("Failed to create dataframe");
 
         let routes_file = gtfs.get_file("routes.txt").expect("Failed to get file");
 
         // Filter files
-        let filtered_routes_file = filter_file_by_values(
+        let filtered_routes_file = filter_file_by_values_df(
             &routes_file,
             &temp_working_directory.path().to_path_buf(),
             vec!["route_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            route_trip_shape_ids_to_keep.column("route_id").unwrap(),
+            route_trip_shape_ids_to_keep.clone(),
             GTFSDataTypes::routes(),
         );
         let mut expected_lines = HashMap::new();

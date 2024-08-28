@@ -8,10 +8,10 @@ mod tests {
     use polars::enable_string_cache;
     use polars::frame::DataFrame;
     use polars::prelude::{NamedFrom, Series};
-    use polars::prelude::DataType::{Categorical, Int32, String};
+    use polars::prelude::DataType::String;
     use tempfile::tempdir;
 
-    use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values, filter_file_by_values_join};
+    use utilities::common::filter_module::filter_by::{filter_file_by_dates, filter_file_by_values_df, filter_file_by_values_join};
     use utilities::testing::environment_module::{check_file_content, setup_temp_gtfs_data};
     use utilities::types::gtfs_data_types::GTFSDataTypes;
 
@@ -88,12 +88,14 @@ mod tests {
         let allowed: Series = [1, 2].iter().collect();
         // Create face pathbuf
         let fake_path = PathBuf::from("fake_path");
-        let result = filter_file_by_values(
+        let service_ids_to_keep: DataFrame = DataFrame::new(vec![
+            Series::new("service_id", &[10, 29, 29, 46, 26421]).cast(&String).expect(""),
+        ]).expect("Failed to create dataframe");
+        let result = filter_file_by_values_df(
             &fake_path,
             &temp_working_directory.path().to_path_buf(),
             vec!["service_id"],
-            vec![Int32],
-            &allowed,
+            service_ids_to_keep,
             GTFSDataTypes::trips(),
         );
         // Assert error
@@ -108,13 +110,14 @@ mod tests {
         let test_files = setup_temp_gtfs_data(&temp_folder).expect("Failed to setup temp gtfs data");
         let trips_file = test_files.iter().find(|file| file.file_name().unwrap() == "trips.txt").expect("Failed to find file");
         // Act
-        let allowed: Series = [68, 76].iter().collect();
-        let result = filter_file_by_values(
+        let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
+            Series::new("service_id", &[68, 76]).cast(&String).expect(""),
+        ]).expect("Failed to create dataframe");
+        let result = filter_file_by_values_df(
             &trips_file,
             &temp_working_directory.path().to_path_buf(),
             vec!["service_id"],
-            vec![Categorical(Default::default(), Default::default())],
-            &allowed,
+            route_trip_shape_ids_to_keep.clone(),
             GTFSDataTypes::trips(),
         );
 
@@ -133,7 +136,6 @@ mod tests {
         check_file_content(&result, expected_lines, 36);
     }
 
-    #[test]
     fn test_filter_file_by_values_benchmark() {
         // Arrange
         let temp_folder = tempdir().expect("Failed to create temp folder");
@@ -151,10 +153,9 @@ mod tests {
         println!("Benchmarking filter_file_by_values_join");
 
         let route_trip_shape_ids_to_keep: DataFrame = DataFrame::new(vec![
-            Series::new("route_id", &[1, 1, 1, 10, 86]).cast(&String).expect("").cast(&Categorical(Default::default(), Default::default())).expect("Failed to cast"),
-            Series::new("service_id", &[10, 29, 29, 46, 26421]).cast(&String).expect("").cast(&Categorical(Default::default(), Default::default())).expect("Failed to cast"),
+            Series::new("route_id", &[1, 1, 1, 10, 86]).cast(&String).expect(""),
+            Series::new("service_id", &[10, 29, 29, 46, 26421]).cast(&String).expect(""),
         ]).expect("Failed to create dataframe");
-
         // print dataframe
         // println!("{:?}", route_trip_shape_ids_to_keep);
         for _ in 0..1 {
@@ -179,55 +180,30 @@ mod tests {
         println!("Average time: {:?} seconds", average_time as f64 / 1e+9);
 
 
-        // // Benchmark filter_file_by_values_df
-        // times = Vec::new();
-        // println!("Benchmarking filter_file_by_values_df");
-        //
-        // for _ in 0..1 {
-        //     let iterator_time = Instant::now();
-        //     let result = filter_file_by_values_df(
-        //         &pathbuf,
-        //         &temp_working_directory.path().to_path_buf(),
-        //         vec!["service_id", "route_id"],
-        //         route_trip_shape_ids_to_keep.clone(),
-        //         GTFSDataTypes::trips(),
-        //     );
-        //     assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
-        //     let iterator_end_time = iterator_time.elapsed();
-        //     times.push(iterator_end_time);
-        // }
-        //
-        // // Get the total and average time in seconds
-        // let total_time: u128 = times.iter().map(|time| time.as_nanos()).sum();
-        // let average_time = total_time / times.len() as u128;
-        // // Print the total time by dividing with 1e+9
-        // println!("Total time: {:?} seconds", total_time as f64 / 1e+9);
-        // println!("Average time: {:?} seconds", average_time as f64 / 1e+9);
-        //
-        // println!("Benchmarking filter_file_by_values");
-        // // Collect each execution time
-        // times = Vec::new();
-        // // Run the function 500 times
-        // for _ in 0..1 {
-        //     let iterator_time = Instant::now();
-        //     let result = filter_file_by_values(
-        //         &pathbuf,
-        //         &temp_working_directory.path().to_path_buf(),
-        //         vec!["service_id", "route_id"],
-        //         vec![Categorical(Default::default(), Default::default()), Categorical(Default::default(), Default::default())],
-        //         &allowed,
-        //         GTFSDataTypes::trips(),
-        //     );
-        //     assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
-        //     let iterator_end_time = iterator_time.elapsed();
-        //     times.push(iterator_end_time);
-        // }
-        // // Get the total and average time in seconds
-        // let total_time: u128 = times.iter().map(|time| time.as_nanos()).sum();
-        // let average_time = total_time / times.len() as u128;
-        // // Print the total time by dividing with 1e+9
-        // println!("Total time: {:?} seconds", total_time as f64 / 1e+9);
-        // println!("Average time: {:?} seconds", average_time as f64 / 1e+9);
+        // Benchmark filter_file_by_values_df
+        times = Vec::new();
+        println!("Benchmarking filter_file_by_values_df");
+
+        for _ in 0..1 {
+            let iterator_time = Instant::now();
+            let result = filter_file_by_values_df(
+                &pathbuf,
+                &temp_working_directory.path().to_path_buf(),
+                vec!["service_id", "route_id"],
+                route_trip_shape_ids_to_keep.clone(),
+                GTFSDataTypes::trips(),
+            );
+            assert!(result.is_ok(), "Expected Ok, got Err: {:?}", result);
+            let iterator_end_time = iterator_time.elapsed();
+            times.push(iterator_end_time);
+        }
+
+        // Get the total and average time in seconds
+        let total_time: u128 = times.iter().map(|time| time.as_nanos()).sum();
+        let average_time = total_time / times.len() as u128;
+        // Print the total time by dividing with 1e+9
+        println!("Total time: {:?} seconds", total_time as f64 / 1e+9);
+        println!("Average time: {:?} seconds", average_time as f64 / 1e+9);
     }
 
     #[test]
@@ -239,12 +215,16 @@ mod tests {
         let trips_file = test_files.iter().find(|file| file.file_name().unwrap() == "trips.txt").expect("Failed to find file");
         // Act
         let allowed: Series = [9, 68].iter().collect();
-        let result = filter_file_by_values(
+        let service_and_route_id_to_keep: DataFrame = DataFrame::new(vec![
+            Series::new("service_id", &[9, 68]).cast(&String).expect(""),
+            Series::new("route_id", &[9, 68]).cast(&String).expect(""),
+        ]).expect("Failed to create dataframe");
+
+        let result = filter_file_by_values_df(
             &trips_file,
             &temp_working_directory.path().to_path_buf(),
             vec!["service_id", "route_id"],
-            vec![Categorical(Default::default(), Default::default()), Categorical(Default::default(), Default::default())],
-            &allowed,
+            service_and_route_id_to_keep.clone(),
             GTFSDataTypes::trips(),
         );
 

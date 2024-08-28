@@ -12,6 +12,8 @@ pub mod filter_by {
     use polars::io::RowIndex;
     use polars::prelude::{all, col, CsvWriterOptions, Expr, LazyCsvReader, LazyFileListReader, lit, Schema, SerializeOptions, Series, StrptimeOptions};
     use polars::prelude::*;
+    use polars::prelude::Expr::Exclude;
+    use smartstring::SmartString;
 
     use crate::common::file_module;
     use crate::types::gtfs_data_types::GTFSDataTypes;
@@ -126,14 +128,18 @@ pub mod filter_by {
         // Make sure the schema is correct
         let schema_ref = Arc::new(expected_file_schema);
         // Make a right join of the allowed_df and the file
-        let ldf_input = LazyCsvReader::new(file)
+        let mut ldf_input = LazyCsvReader::new(file)
             .with_has_header(true)
             .with_low_memory(false)
             .with_schema_modify(|file_schema: Schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
             .finish()?
             .filter(filter_expr)
-            .with_streaming(false).collect()?;
-        // .join(ldf_input, &[col("route_id")], &[col("route_id")], JoinArgs::from(JoinType::Left));
+            .with_streaming(false)
+            .sink_csv(output_file.clone(), CsvWriterOptions::default())?;
+
+        // Write to file
+        // let mut file = std::fs::File::create(&output_file).unwrap();
+        // CsvWriter::new(&mut file).finish(&mut ldf_input).unwrap();
 
         Ok(output_file.to_path_buf())
     }
@@ -156,54 +162,69 @@ pub mod filter_by {
         let output_file = output_folder.join(file.file_name().ok_or("Invalid file name")?);
 
         let mut columns = Vec::new();
+        let mut all_columns: Vec<Expr> = Vec::new();
 
         // Iterate through the column names and data types and create a vector of expressions and add it to columns filter
         for column_name in join_columns.iter() {
             let column = col(column_name);
             columns.push(column.clone());
+            all_columns.push(column.clone());
         }
 
         // Create a series with boolean type and height of the allowed series
         join_df.with_column(Series::new("allowed", vec![true; join_df.height()]))?;
 
 
+        let row_index = RowIndex {
+            name: Arc::from("id"),
+            offset: 0,  // Start the row index from 10
+        };
+
+        // expected_file_schema.new_inserting_at_index(0, SmartString::from("id"), DataType::UInt32);
+
         // Make sure the schema is correct
-        let schema_ref = Arc::new(expected_file_schema);
+        let schema_ref = Arc::new(expected_file_schema.clone());
 
-        // Print join_df
-        // println!("Print columns");
-        // println!("{:?}", columns);
-        // println!("Print join_df");
-        // println!("{:?}", join_df);
-
+        // Negate columns. Get all columns from expected_file_schema that are not in join_columns
+        let mut negated_columns: Vec<&str> = Default::default();
+        for field in expected_file_schema.get_names() {
+            if !join_columns.contains(&field) {
+                negated_columns.push(field.clone());
+                all_columns.push(col(field).clone());
+            }
+        }
+        // Add all negated strings and join_columns to columns as type col
+        for column_name in negated_columns.iter() {
+            let column = col(column_name);
+            all_columns.push(column.clone());
+        }
+        for column_name in join_columns.iter() {
+            let column = col(column_name);
+            all_columns.push(column.clone());
+        }
 
         // Make a right join of the allowed_df and the file
         let ldf_input = LazyCsvReader::new(file)
             .with_has_header(true)
             .with_low_memory(false)
             .with_schema_modify(|file_schema: Schema| GTFSDataTypes::modify_dtype(&file_schema, schema_ref.clone()))?
+            .with_row_index(Some(row_index))
             .finish()?;
-        // join_df
-        //     .lazy()
-        //     .select(&columns)
-        //     .with_streaming(false)
-        //     .join(ldf_input, &[col("route_id")], &[col("route_id")], JoinArgs::from(JoinType::Semi)).collect()?;
-
-        let mut test = ldf_input
-            .select(&columns)
+        let mut df = ldf_input.clone()
+            .select(&[all().exclude(negated_columns)])
             .with_row_estimate(true)
-            .with_row_index(&"id", None)
-            .with_streaming(false)
+            // .with_row_estimate(true)
             .join(join_df.lazy(), &columns, &columns, JoinArgs::from(JoinType::Left))
             .filter(col("allowed"))
-            .select(&[all().exclude(&["allowed"])])
-            // TODO join the old columns by index using the id column
-            .collect()?;
-        // Print the first 5 rows of the joined dataframe
-        println!("{:?}", test.head(Some(5)));
-        // .sink_csv(output_file.clone(), CsvWriterOptions::default())?;
+            .select(&[col("id"), col("allowed")])
+            .with_row_estimate(true)
+            // Keep all rows from ldf_input that are in the first_filter column id
+            .left_join(ldf_input, col("id"), col("id"))
+            .filter(col("allowed"))
+            .select(&[all().exclude(&["id", "allowed"])]).collect()?;
+        // Write the output file
         let mut file = std::fs::File::create(&output_file).unwrap();
-        CsvWriter::new(&mut file).finish(&mut test).unwrap();
+        CsvWriter::new(&mut file).finish(&mut df).unwrap();
         Ok(output_file.to_path_buf())
     }
 
@@ -358,7 +379,6 @@ pub mod filter_column {
         expected_file_schema: Schema,
     ) -> Result<DataFrame, Box<dyn Error>> {
         // Set a global string cache
-        enable_string_cache();
         let mut columns = Vec::new();
         // Iterate through the column names and data types and create a vector of expressions and add it to columns
         for column_name in column_names.iter() {

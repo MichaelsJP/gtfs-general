@@ -22,7 +22,7 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("agency_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("agency_id", DataType::String),
             Field::new("agency_name", DataType::String),
             Field::new("agency_url", DataType::String),
             Field::new("agency_timezone", DataType::String),
@@ -38,7 +38,7 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("service_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("service_id", DataType::String),
             Field::new("date", DataType::String),
             Field::new("exception_type", DataType::Int64),
         ])
@@ -58,7 +58,7 @@ impl GTFSDataTypes {
             Field::new("sunday", DataType::Int64),
             Field::new("start_date", DataType::String),
             Field::new("end_date", DataType::String),
-            Field::new("service_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("service_id", DataType::String),
         ])
     }
 
@@ -84,8 +84,8 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("route_id", DataType::Categorical(Default::default(), Default::default())),
-            Field::new("agency_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("route_id", DataType::String),
+            Field::new("agency_id", DataType::String),
             Field::new("route_short_name", DataType::String),
             Field::new("route_long_name", DataType::String),
             Field::new("route_desc", DataType::String),
@@ -104,7 +104,7 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("stop_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("stop_id", DataType::String),
             Field::new("stop_code", DataType::String),
             Field::new("stop_name", DataType::String),
             Field::new("stop_desc", DataType::String),
@@ -124,14 +124,14 @@ impl GTFSDataTypes {
     /// Schema for GTFS Trips data
     pub fn trips() -> Schema {
         Schema::from_iter(vec![
-            Field::new("route_id", DataType::Categorical(Default::default(), Default::default())),
-            Field::new("service_id", DataType::Categorical(Default::default(), Default::default())),
-            Field::new("trip_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("route_id", DataType::String),
+            Field::new("service_id", DataType::String),
+            Field::new("trip_id", DataType::String),
             Field::new("trip_headsign", DataType::String),
             Field::new("trip_short_name", DataType::String),
             Field::new("direction_id", DataType::Int64),
             Field::new("block_id", DataType::String),
-            Field::new("shape_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("shape_id", DataType::String),
             Field::new("wheelchair_accessible", DataType::Int64),
             Field::new("bikes_allowed", DataType::Int64),
         ])
@@ -142,10 +142,10 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("trip_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("trip_id", DataType::String),
             Field::new("arrival_time", DataType::String),
             Field::new("departure_time", DataType::String),
-            Field::new("stop_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("stop_id", DataType::String),
             Field::new("stop_sequence", DataType::Int64),
             Field::new("stop_headsign", DataType::String),
             Field::new("pickup_type", DataType::Int64),
@@ -162,7 +162,7 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("shape_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("shape_id", DataType::String),
             Field::new("shape_pt_sequence", DataType::Int64),
             Field::new("shape_pt_lat", DataType::Float64),
             Field::new("shape_pt_lon", DataType::Float64),
@@ -175,7 +175,7 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("trip_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("trip_id", DataType::String),
             Field::new("start_time", DataType::String),
             Field::new("end_time", DataType::String),
             Field::new("headway_secs", DataType::Int64),
@@ -188,8 +188,8 @@ impl GTFSDataTypes {
         // Set a global string cache
         enable_string_cache();
         Schema::from_iter(vec![
-            Field::new("from_stop_id", DataType::Categorical(Default::default(), Default::default())),
-            Field::new("to_stop_id", DataType::Categorical(Default::default(), Default::default())),
+            Field::new("from_stop_id", DataType::String),
+            Field::new("to_stop_id", DataType::String),
             Field::new("transfer_type", DataType::Int64),
             Field::new("min_transfer_time", DataType::Int64),
         ])
