@@ -16,23 +16,22 @@ from gtfs_general import logger
 from gtfs_general.exceptions.extractor_exceptions import GtfsFileNotFound
 from gtfs_general.extractor.bbox import Bbox
 from gtfs_general.extractor.gtfs import GTFS, GtfsDtypes
-from gtfs_general.extractor.utils import parse_date_from_str
 
 
 class Extractor(GTFS):
     def __init__(
-        self,
-        input_object: Path,
-        output_folder: Path,
-        scheduler: str = "multiprocessing",
-        cpu_count: int | None = None,
+            self,
+            input_object: Path,
+            output_folder: Path,
+            scheduler: str = "multiprocessing",
+            cpu_count: int | None = None,
     ) -> None:
         super().__init__(input_object, scheduler=scheduler, cpu_count=cpu_count)
         if not output_folder.exists():
             logger.debug(f"Creating output folder: {output_folder}")
             os.makedirs(output_folder)
         else:
-            logger.warn("Output folder exists. Using it.")
+            logger.warning("Output folder exists. Using it.")
         if not output_folder.exists():
             logger.error(f"Check access rights. Couldn't find and create the output folder {output_folder}")
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), output_folder)
@@ -46,27 +45,27 @@ class Extractor(GTFS):
                 columns[i] = rows.columns[columns]
         mask = rows[columns].isin(ids)
         for column in columns:
-            rows[column].where(mask[column], inplace=True)
+            rows[column] = rows[column].where(mask[column])
             rows = rows[rows[column].notna()]
         return rows
 
     @staticmethod
     def __filter_stops_by_bbox(rows: pd.DataFrame, bbox: Bbox) -> pd.DataFrame:
         mask: pd.Series = rows.apply(lambda row: bbox.contains(row["stop_lat"], row["stop_lon"]), axis=1)
-        rows["stop_id"].where(mask, inplace=True)
+        rows["stop_id"] = rows["stop_id"].where(mask)
         rows.dropna(inplace=True)
         return rows
 
     def __filter_rows_by_custom_column(
-        self,
-        file_path: Path | None,
-        ids: Set,
-        columns: List = None,
-        usecols: List = None,
-        dtype: Union[str, Dict] = "object",
-        return_columns: List = None,
-        write_out: bool = False,
-        low_memory: bool = False,
+            self,
+            file_path: Path | None,
+            ids: Set,
+            columns: List = None,
+            usecols: List = None,
+            dtype: Union[str, Dict] = "object",
+            return_columns: List = None,
+            write_out: bool = False,
+            low_memory: bool = False,
     ) -> Tuple:
         if not file_path or not file_path.exists():
             raise GtfsFileNotFound(file_path=file_path.__str__())
@@ -259,14 +258,13 @@ class Extractor(GTFS):
             self._gtfs_files.calendar,
             dtype=GtfsDtypes.calendar,
             parse_dates=["start_date", "end_date"],
-            date_parser=parse_date_from_str,
             low_memory=False,
         )
         # csv_chunks["start_date"] = ddf.to_datetime(csv_chunks["start_date"].dt.time.astype(str))
         with TqdmCallback(desc="Filter calendar.txt", unit=" chunks"):
             results: pd.DataFrame = csv_chunks.loc[
                 (csv_chunks.start_date >= start_date) & (csv_chunks.end_date <= end_date)
-            ].compute(scheduler=self._scheduler, num_workers=self._cpu_count)
+                ].compute(scheduler=self._scheduler, num_workers=self._cpu_count)
         output_path: Path = self._output_folder.joinpath(self._gtfs_files.calendar.name)
         results.to_csv(output_path, index=False, doublequote=True, quoting=csv.QUOTE_ALL)
         return set(results.service_id)
@@ -278,13 +276,12 @@ class Extractor(GTFS):
             self._gtfs_files.calendar_dates,
             dtype=GtfsDtypes.calendar_dates,
             parse_dates=["date"],
-            date_parser=parse_date_from_str,
             low_memory=False,
         )
         with TqdmCallback(desc="Filter calendar_dates.txt", unit=" chunks"):
             results: pd.DataFrame = csv_chunks.loc[
                 (csv_chunks.date >= start_date) & (csv_chunks.date <= end_date)
-            ].compute(scheduler=self._scheduler, num_workers=self._cpu_count)
+                ].compute(scheduler=self._scheduler, num_workers=self._cpu_count)
         output_path: Path = self._output_folder.joinpath(self._gtfs_files.calendar.name)
         results.to_csv(output_path, index=False, doublequote=True, quoting=csv.QUOTE_ALL)
         return set(results.service_id)
