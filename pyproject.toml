@@ -4,26 +4,27 @@ version = "0.1.0"
 description = "A general to command your GTFS data"
 authors = ["Julian Psotta <julianpsotta@gmail.com>"]
 readme = "README.md"
-packages = [{include = "gtfs_general", from = "src"}]
+packages = [{ include = "gtfs_general", from = "src" }]
 
 [tool.poetry.scripts]
 gtfs-general = "gtfs_general.main:app"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.13"
-dask = { extras = ['distributed'], version = "^2024.4.2" }
-pandas = "^1.5.0"
-typer = {extras = ["all"], version = "^0.6.1"}
+dask = { extras = ['distributed', 'dataframe'], version = "^2024.4.2" }
+typer = { extras = ["all"], version = "^0.6.1" }
 rich = "^12.6.0"
 types-PyYAML = "^6.0.12"
 tqdm = "^4.64.1"
 click = "^8.1.3"
 click-extra = "^3.2.5"
-uvicorn = {extras = ["standard"], version = "^0.19.0"}
-gunicorn = "^20.1.0"
-fastapi = {version="0.104.1", extras=["all"]}
+uvicorn = { extras = ["standard"], version = "^0.19.0" }
+gunicorn = "^22.0.0"
+fastapi = "^0.109.1"
 httpx = "^0.25.2"
 pydantic-settings = "^2.1.0"
+polars = "^1.12.0"
+pandas = "^2.2.3"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.6.0"

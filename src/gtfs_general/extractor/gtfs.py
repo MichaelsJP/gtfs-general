@@ -12,7 +12,6 @@ from dask import dataframe as ddf
 
 from gtfs_general import logger
 from gtfs_general.exceptions.extractor_exceptions import GtfsIncompleteException
-from gtfs_general.extractor.utils import parse_date_from_str
 
 
 class GtfsDtypes:
@@ -29,7 +28,7 @@ class GtfsDtypes:
     }
     calendar_dates: Dict = {
         "service_id": np.str_,
-        "date": np.str_,
+        "date": "Int64",
         "exception_type": "Int64",
     }
     calendar: Dict = {
@@ -40,8 +39,8 @@ class GtfsDtypes:
         "friday": "Int64",
         "saturday": "Int64",
         "sunday": "Int64",
-        "start_date": np.str_,
-        "end_date": np.str_,
+        "start_date": "Int64",
+        "end_date": "Int64",
         "service_id": np.str_,
     }
     feed_info: Dict = {
@@ -49,8 +48,8 @@ class GtfsDtypes:
         "feed_publisher_url": np.str_,
         "feed_lang": np.str_,
         "default_lang": np.str_,
-        "feed_start_date": np.str_,
-        "feed_end_date": np.str_,
+        "feed_start_date": "Int64",
+        "feed_end_date": "Int64",
         "feed_version": np.str_,
         "feed_contact_email": np.str_,
         "feed_contact_url": np.str_,
@@ -74,8 +73,8 @@ class GtfsDtypes:
         "stop_code": np.str_,
         "stop_name": np.str_,
         "stop_desc": np.str_,
-        "stop_lat": np.float_,
-        "stop_lon": np.float_,
+        "stop_lat": np.float64,
+        "stop_lon": np.float64,
         "zone_id": np.str_,
         "stop_url": np.str_,
         "location_type": "Int64",
@@ -108,17 +107,16 @@ class GtfsDtypes:
         "drop_off_type": "Int64",
         "continuous_pickup": "Int64",
         "continuous_drop_off": "Int64",
-        "shape_dist_traveled": np.float_,
-        "timepoint": "Int64",
+        "shape_dist_traveled": np.float64
     }
 
     # Optional
     shapes: Dict = {
         "shape_id": np.str_,
         "shape_pt_sequence": "Int64",
-        "shape_pt_lat": np.float_,
-        "shape_pt_lon": np.float_,
-        "shape_dist_traveled": np.float_,
+        "shape_pt_lat": np.float64,
+        "shape_pt_lon": np.float64,
+        "shape_dist_traveled": np.float64,
     }
     frequencies: Dict = {
         "trip_id": np.str_,
@@ -194,20 +192,20 @@ class GtfsFiles:
         elif "transfers" in file_name:
             self._transfers = file_path
         else:
-            logger.warn(f"Unknown file found: {file_path}")
+            logger.warning(f"Unknown file found: {file_path}")
 
     def required_is_complete(self) -> bool:
         if all(
-            [
-                self.agency,
-                self.calendar_dates,
-                self.calendar,
-                self.feed_info,
-                self.routes,
-                self.stop_times,
-                self.stops,
-                self.trips,
-            ]
+                [
+                    self.agency,
+                    self.calendar_dates,
+                    self.calendar,
+                    self.feed_info,
+                    self.routes,
+                    self.stop_times,
+                    self.stops,
+                    self.trips,
+                ]
         ):
             return True
         return False
@@ -215,10 +213,10 @@ class GtfsFiles:
 
 class GTFS:
     def __init__(
-        self,
-        input_object: Path,
-        cpu_count: int | None = None,
-        scheduler: str = "multiprocessing",
+            self,
+            input_object: Path,
+            cpu_count: int | None = None,
+            scheduler: str = "multiprocessing",
     ) -> None:
         self._input_folder: Path = input_object
         self._temporary_folder_context: Any[tempfile.TemporaryDirectory, None] = None
@@ -264,9 +262,9 @@ class GTFS:
 
         csv_chunks: ddf.DataFrame = ddf.read_csv(
             self._gtfs_files.calendar,
+            dtype=GtfsDtypes.calendar,
             usecols=["start_date", "end_date"],
             parse_dates=["start_date", "end_date"],
-            date_parser=parse_date_from_str,
             low_memory=False,
         )
         xmin, xmax = ddf.compute(
